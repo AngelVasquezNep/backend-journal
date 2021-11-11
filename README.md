@@ -9,6 +9,13 @@ Welcome!
 
 ## By folders
 
-- `simple_tests`
+### `simple_tests`
 
 I'll try some specific functionality or a simple exercise.
+
+
+### `fast-api-platzi-course`
+
+[Fast API Platzi course.](https://platzi.com/cursos/fastapi/)
+
+A simple FastAPI introduction course.
