@@ -75,8 +75,12 @@ WSGI_APPLICATION = 'simple_app.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'simple_django_tests',
+        'USER': 'simple_django_tests',
+        'PASSWORD': 'simple123',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
     }
 }
 
