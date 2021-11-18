@@ -3,7 +3,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field, EmailStr
 
-from typing import Optional
+from typing import Optional, Union
 from fastapi import FastAPI, Body, Query, Path
 
 ENV = os.environ.get("ENV")
@@ -19,7 +19,7 @@ class AccountType(Enum):
     SUBSCRIPTION = "SUBSCRIPTION"
 
 
-class User(BaseModel):
+class UserBase(BaseModel):
     full_name: str = Field(
         ...,
         min_length=1,
@@ -30,6 +30,14 @@ class User(BaseModel):
     )
     account_type: AccountType = Field(...)
     email: EmailStr = Field(...)
+
+
+class UserIn(UserBase):
+    password: str = Field(..., min_length=8, max_length=50)
+
+
+class UserOut(UserBase):
+    pass
 
 
 class Location(BaseModel):
@@ -43,8 +51,8 @@ def home():
     }
 
 
-@app.post("/user")
-def user(user: User = Body(...)):
+@app.post("/user",response_model=UserOut)
+def user(user: UserIn = Body(...)):
     return user
 
 
@@ -69,7 +77,7 @@ def user(user_id: int = Path(..., gt=0)):
 @app.put("/user/{user_id}")
 def user(
     user_id: int = Path(...),
-    user: User = Body(...),
+    user: UserIn = Body(...),
     location: Location = Body(...)
 ):
     return {
