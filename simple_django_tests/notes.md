@@ -58,14 +58,22 @@ En `library/models.py`
 
 ```python
 from django.db import models
-
-from django.db import models
+from django.db.models import manager
 
 
 class Books(models.Model):
     title = models.CharField(max_length=500)
     year = models.IntegerField()
 
+    def __str__(self):
+        return f'{self.title} ({self.pk})'
+
+# Authors.objects.from_this_year()
+# -> Authors.objects.filter(year=2021)
+
+# class AuthorsManager(models.Manager):
+#     def from_this_year(self):
+#         self.filter(year=2021)
 
 class Authors(models.Model):
     name = models.CharField(max_length=100)
@@ -74,6 +82,8 @@ class Authors(models.Model):
         on_delete=models.CASCADE,
         related_name='authors'
     )
+
+    # manager = AuthorsManager()
 ```
 
 7. Registrar APP en `simple_app/settings.py`
@@ -169,11 +179,11 @@ a = Authors.objects.create(name="Fiódor Dostoyevski", book=b)
 
 
 
-the_talisman = Books.objects.create(title="The Talisman", year=1984)
-stephen_king = Authors.objects.create(name="Stephen King", book=the_talisman)
-peter_straub = Authors.objects.create(name="Peter Straub", book=the_talisman)
-it = Books.objects.create(title="It", year=1986)
+# the_talisman = Books.objects.create(title="The Talisman", year=1984)
+# stephen_king = Authors.objects.create(name="Stephen King", book=the_talisman)
+# peter_straub = Authors.objects.create(name="Peter Straub", book=the_talisman)
+# it = Books.objects.create(title="It", year=1986)
 
-it.authors.add(stephen_king)
+# it.authors.add(stephen_king)
 
 ```
