@@ -11,9 +11,16 @@ class Author(BaseModel):
         help_text="ISO 3166 ALPHA-3"
     )
 
+    class Meta:
+        ordering = ('name',)
+
     def __str__(self) -> str:
         return f'{self.pk} - {self.name}'
 
+
+class BookManager(models.Manager):
+    def contemporaries(self):
+        return self.filter(year__gt=1950)
 
 class Book(BaseModel):
     title = models.CharField(max_length=500)
@@ -37,8 +44,14 @@ class Book(BaseModel):
     copies = models.PositiveIntegerField()
     description = models.TextField()
 
+    objects = BookManager()
+
     def __str__(self) -> str:
         return f'{self.pk} - {self.title}'
+
+    def in_stock(self) -> bool:
+      return self.copies > 0
+
 
 def run():
     for author in Author.objects.all():
