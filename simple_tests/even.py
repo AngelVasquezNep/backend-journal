@@ -7,7 +7,7 @@ class EvenNumbers:
     def __init__(self, max=None):
         self.max = max
 
-    # Convertir un iterable en un itarador
+    # Convertir un iterable en un iterador
     # iter() manda a llamar a este método
     def __iter__(self):
         self.num = 0  # Primer número par
