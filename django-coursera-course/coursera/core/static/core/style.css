@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  padding: 0;
+  color: rgb(48, 48, 48)
+}
+
+form button {
+  -webkit-box-align: center;
+  margin: auto 0px;
+  background: none rgb(0, 86, 210);
+  border: none;
+  height: 36px;
+  width: fit-content;
+  min-width: 10rem;
+  text-align: center;
+  border-radius: 3px;
+  font-weight: bold;
+  padding: 5px;
+  color: white;
+}

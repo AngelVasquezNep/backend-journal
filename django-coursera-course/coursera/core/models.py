@@ -51,6 +51,7 @@ class Course(models.Model):
     description = models.CharField(max_length=500)
     instructors = models.ManyToManyField(Instructor)
     pub_date = models.DateField(default=datetime.now)
+    total_enrollment = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"Name: {self.name}, Description: {self.description}"

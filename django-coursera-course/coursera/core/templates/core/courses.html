@@ -1,0 +1,24 @@
+<head>
+  {% load static %}
+  <link rel="stylesheet" type="text/css" href="{% static 'core/style.css' %}">
+</head>
+<body>
+  {% if course_list %}
+    <ul>
+      {% for course in course_list %}
+        <li>
+          <h2>{{ course.name }}</h2>
+          <p>{{ course.description }}</p>
+          <p>{{ course.total_enrollment }}</p>
+
+          <form action="{% url 'courses:enroll' course.id %}" method="post">
+            {% csrf_token %}
+            <button type="submit">Enroll</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No courses are available</p>
+  {% endif %}
+</body>
