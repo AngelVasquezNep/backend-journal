@@ -1,24 +1,90 @@
 <head>
+  <!-- CSS only -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
   {% load static %}
   <link rel="stylesheet" type="text/css" href="{% static 'core/style.css' %}">
 </head>
 <body>
-  {% if course_list %}
-    <ul>
-      {% for course in course_list %}
-        <li>
-          <h2>{{ course.name }}</h2>
-          <p>{{ course.description }}</p>
-          <p>{{ course.total_enrollment }}</p>
+  <div class="container">
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+      <div class="navbar-menu">
+        <div class="navbar-start">
+          <a class="navbar-item">
+            Home
+          </a>
+        </div>
+      </div>
 
-          <form action="{% url 'courses:enroll' course.id %}" method="post">
+      <div class="navbar-end">
+        {% if not user.is_authenticated %}
+          <form class="navbar-item" action="{% url 'courses:login' %}"  method="post" style="margin-block-end: 0">
             {% csrf_token %}
-            <button type="submit">Enroll</button>
+            <div class="field is-horizontal">
+              <div class="field-body">
+                <div class="field">
+                  <p class="control is-expanded has-icons-left">
+                    <input required name="username" class="input" placeholder="username">
+                  </p>
+                </div>
+                <div class="field">
+                  <p class="control is-expanded has-icons-left has-icons-right">
+                    <input required name="psw" class="input" type="password" placeholder="Password">
+                  </p>
+                </div>
+                <div class="field">
+                  <p class="control">
+                    <button type="submit" class="button is-success">
+                      Login
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
           </form>
-        </li>
+
+        <div class="navbar-item">
+          <div class="buttons">
+            <a class="button is-primary" href="{% url 'courses:registration' %}">Signup</a>
+          </div>
+        </div>
+        {% else %}
+        <div class="navbar-item">
+          <p>Welcome <strong>{{ user.first_name }}({{ user.username }})</strong></p>
+        </div>
+
+        <div class="navbar-item">
+          <div class="buttons">
+            <a class="button is-primary" href="{% url 'courses:logout' %}">Logout</a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </nav>
+
+    {% if course_list %}
+      <h1 class="title">Courses</h1>
+      {% for course in course_list %}
+        <div class="block">
+          <section class="card">
+            <div class="card-content">
+
+              <h2 class="subtitle">
+                <a class="" href="{% url 'courses:course' course.id %}">
+                  {{ course.name }} | <span class="has-text-primary">{{ course.total_enrollment }} enrollment(s)</span>
+                </a>
+              </h2>
+              <p class="field">{{ course.description }}</p>
+              
+              <form action="{% url 'courses:enroll' course.id %}" method="post">
+                {% csrf_token %}
+                <button class="button is-link" type="submit">Enroll</button>
+              </form>
+            </div>
+          <section>
+        </div>
       {% endfor %}
-    </ul>
-  {% else %}
-    <p>No courses are available</p>
-  {% endif %}
+    {% else %}
+      <p>No courses are available</p>
+    {% endif %}
+  </div>
 </body>

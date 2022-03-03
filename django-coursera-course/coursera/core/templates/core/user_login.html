@@ -1,0 +1,26 @@
+<head>
+  <!-- CSS only -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+</head>
+
+<body>
+  <div class="container">
+    <form action="{% url 'courses:login' %}"  method="post">
+      {% csrf_token %}
+      <div class="container">
+        <h1 class="title">Login</h1>
+        <div class="field">
+          <label class="label" for="username"><b>User Name</b></label>
+          <input class="input" type="text" placeholder="Enter User Name: " name="username" required>
+        </div>
+        <div class="field">
+          <label class="label" for="psw"><b>Password</b></label>
+          <input class="input" type="password" placeholder="Enter Password: " name="psw" required>
+        </div>
+        <div>
+          <button class="button is-primary" type="submit">Login</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</body>

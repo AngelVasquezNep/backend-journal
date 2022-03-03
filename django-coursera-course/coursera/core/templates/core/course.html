@@ -1,0 +1,32 @@
+<head>
+  <!-- CSS only -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+  {% load static %}
+  <link rel="stylesheet" type="text/css" href="{% static 'core/style.css' %}">
+</head>
+<body>
+  <div class="container">
+    {% if course %}
+      <div class="block">
+        <section class="card">
+          <div class="card-content">
+
+            <h2 class="subtitle">
+              <a class="" href="{% url 'courses:course' course.id %}">
+                {{ course.name }} | <span class="has-text-primary">{{ course.total_enrollment }} enrollment(s)</span>
+              </a>
+            </h2>
+            <p class="field">{{ course.description }}</p>
+            
+            <form action="{% url 'courses:enroll' course.id %}" method="post">
+              {% csrf_token %}
+              <button class="button is-link" type="submit">Enroll</button>
+            </form>
+          </div>
+        <section>
+      </div>
+    {% else %}
+      <p>Course not found</p>
+    {% endif %}
+  </div>
+</body>
