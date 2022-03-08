@@ -77,3 +77,53 @@ class Enrollment(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date_enrolled = models.DateField(default=datetime.now)
     mode = models.CharField(max_length=5, choices=COURSE_MODES, default=AUDIT)
+
+
+class Exam(models.Model):
+    title = models.TextField(max_length=200, blank=False, null=False)
+    min_score = models.PositiveIntegerField(default=1, blank=False, null=False)
+    is_approved = models.BooleanField(default=False, blank=False, null=False)
+
+    def __str__(self):
+        return self.title
+
+    def review(self):
+        right_answered = (self.questions
+                              .filter(answer__isnull=False, answer__is_answer=True)
+                              .count())
+        passed = right_answered >= self.min_score
+        self.is_approved = passed
+        self.save()
+        return self.is_approved
+
+
+class Question(models.Model):
+    exam = models.ForeignKey(
+        "core.Exam",
+        related_name="questions",
+        on_delete=models.CASCADE,
+    )
+    title = models.CharField(max_length=200, blank=False, null=False)
+    answer = models.OneToOneField(
+        "core.Option",
+        null=True,
+        related_name="+",
+        on_delete=models.CASCADE,
+    )
+
+    def __str__(self):
+        return self.title
+
+
+class Option(models.Model):
+    question = models.ForeignKey(
+        "core.Question",
+        related_name="question_options",
+        on_delete=models.CASCADE,
+    )
+    label = models.CharField(max_length=200, blank=False, null=False)
+    value = models.CharField(max_length=100, blank=False, null=False)
+    is_answer = models.SmallIntegerField(blank=False, null=False)
+
+    def __str__(self):
+        return f'{self.label}'
