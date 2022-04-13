@@ -1,5 +1,15 @@
 from datetime import date
-from core.models import User, Instructor, Course, Lesson, Learner, Enrollment
+from core.models import (
+    User,
+    Instructor,
+    Course,
+    Lesson,
+    Learner,
+    Enrollment,
+    Exam,
+    Question,
+    Option,
+)
 
 
 def write_instructors():
@@ -71,6 +81,43 @@ def write_learners():
     print("Learner objects all saved... ")
 
 
+def write_exams():
+    course_cloud_app = Course.objects.get(name="Cloud Application Development with Database")
+    exam = Exam.objects.create(
+        title="Exam 1: Cloud Application Development with Database",
+        course=course_cloud_app,
+    )
+
+    q1 = Question.objects.create(exam=exam, title="Q1?")
+    q2 = Question.objects.create(exam=exam, title="Q2?")
+
+    Option.objects.create(
+        question=q1,
+        label="True",
+        value="OPT_1",
+        is_answer=True,
+    )
+    Option.objects.create(
+        question=q1,
+        label="False",
+        value="OPT_2",
+        is_answer=False,
+    )
+    Option.objects.create(
+        question=q2,
+        label="True",
+        value="OPT_3",
+        is_answer=True,
+    )
+    Option.objects.create(
+        question=q2,
+        label="False",
+        value="OPT_4",
+        is_answer=False,
+    )
+    print("Exams objects all saved... ")
+
+
 def clean_data():
     # Delete all data to start from fresh
     Enrollment.objects.all().delete()
@@ -79,6 +126,7 @@ def clean_data():
     Instructor.objects.all().delete()
     Course.objects.all().delete()
     Lesson.objects.all().delete()
+    Exam.objects.all().delete()
 
 
 def start_app():
@@ -87,3 +135,6 @@ def start_app():
     write_instructors()
     write_lessons()
     write_learners()
+    write_exams()
+
+# from core.scripts.write import start_app

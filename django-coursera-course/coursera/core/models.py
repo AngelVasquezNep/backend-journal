@@ -104,7 +104,7 @@ class Question(models.Model):
         on_delete=models.CASCADE,
     )
     title = models.CharField(max_length=200, blank=False, null=False)
-    answer = models.OneToOneField(
+    answer = models.OneToOneField( # User answer
         "core.Option",
         null=True,
         related_name="+",
