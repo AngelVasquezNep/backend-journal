@@ -77,25 +77,59 @@ class Enrollment(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date_enrolled = models.DateField(default=datetime.now)
     mode = models.CharField(max_length=5, choices=COURSE_MODES, default=AUDIT)
+    is_approved = models.BooleanField(default=False, blank=False, null=False)
+    submitted_at = models.DateField(null=True)
 
+    def evalute_submission(self):
+        last_submission = self.submissions.last()
+        if not last_submission:
+            return self.is_approved
+        anwsers = [option.answer for option in last_submission.submission_options.all()]
+        is_approved = enrollment.course.exam.review(anwsers)
+        self.is_approved = is_approved
+        self.save()
+        return self.is_approved
+
+
+class Submission(models.Model):
+    enrollment = models.ForeignKey(
+        Enrollment,
+        related_name='submissions',
+        on_delete=models.CASCADE,
+    )
+    submitted_at = models.DateField(default=datetime.now)
+
+class SubmissionAnwers(models.Model):
+    submission = models.ForeignKey(
+        Submission,
+        related_name='submission_options',
+        on_delete=models.CASCADE,
+    )
+    answer = models.OneToOneField(
+        'Option',
+        related_name='+',
+        on_delete=models.CASCADE,
+    )
 
 class Exam(models.Model):
     title = models.TextField(max_length=200, blank=False, null=False)
     min_score = models.PositiveIntegerField(default=1, blank=False, null=False)
-    is_approved = models.BooleanField(default=False, blank=False, null=False)
+    course = models.OneToOneField(
+        'core.Course',
+        related_name='exam',
+        null=True,
+        on_delete=models.CASCADE,
+    )
 
     def __str__(self):
         return self.title
 
-    def review(self):
-        right_answered = (self.questions
-                              .filter(answer__isnull=False, answer__is_answer=True)
-                              .count())
-        passed = right_answered >= self.min_score
-        self.is_approved = passed
-        self.save()
-        return self.is_approved
-
+    def review(self, answers):
+        score = 0
+        for answer in answers:
+            if answer.is_answer:
+                score += 1
+        return score >= self.min_score
 
 class Question(models.Model):
     exam = models.ForeignKey(
@@ -104,12 +138,6 @@ class Question(models.Model):
         on_delete=models.CASCADE,
     )
     title = models.CharField(max_length=200, blank=False, null=False)
-    answer = models.OneToOneField( # User answer
-        "core.Option",
-        null=True,
-        related_name="+",
-        on_delete=models.CASCADE,
-    )
 
     def __str__(self):
         return self.title
