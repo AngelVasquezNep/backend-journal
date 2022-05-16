@@ -88,35 +88,41 @@ def write_exams():
         course=course_cloud_app,
     )
 
-    q1 = Question.objects.create(exam=exam, title="Q1?")
-    q2 = Question.objects.create(exam=exam, title="Q2?")
+    q1 = Question.objects.create(exam=exam, title="Which framework is used to build backend and frontend apps at the same time?")
+    q2 = Question.objects.create(exam=exam, title="Does Django allow you to use templates")
 
     Option.objects.create(
         question=q1,
-        label="True",
+        label="Django",
         value="OPT_1",
         is_answer=True,
     )
     Option.objects.create(
         question=q1,
-        label="False",
+        label="Node.js",
         value="OPT_2",
         is_answer=False,
     )
     Option.objects.create(
         question=q2,
-        label="True",
+        label="Yes",
         value="OPT_3",
         is_answer=True,
     )
     Option.objects.create(
         question=q2,
-        label="False",
+        label="No",
         value="OPT_4",
         is_answer=False,
     )
     print("Exams objects all saved... ")
 
+
+def create_enrollment():
+    for course in Course.objects.all():
+        learners = Learner.objects.all()
+        enrollments = [Enrollment(learner=learner, course=course) for learner in learners]
+        Enrollment.objects.bulk_create(enrollments)
 
 def clean_data():
     # Delete all data to start from fresh
@@ -136,5 +142,6 @@ def start_app():
     write_lessons()
     write_learners()
     write_exams()
+    create_enrollment()
 
 # from core.scripts.write import start_app
