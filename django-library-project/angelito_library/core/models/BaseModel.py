@@ -51,6 +51,9 @@ class SoftDeletionModel(models.Model):
         self._meta.model.objects.filter(
             pk=self.pk).update(deleted_at=timezone.now())
 
+    def hard_delete(self):
+        return super().delete()
+
 
 class BaseModel(SoftDeletionModel, TimeStampedModel):
     class Meta:
