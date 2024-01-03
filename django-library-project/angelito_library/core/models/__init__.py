@@ -1,1 +1,2 @@
-from .BaseModel import BaseModel, SoftDeletionModel, TimeStampedModel
+from .BaseModel import BaseModel
+from .User import User

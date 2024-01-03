@@ -54,6 +54,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'angelito_library.urls'
+AUTH_USER_MODEL = 'core.User'
 
 TEMPLATES = [
     {
