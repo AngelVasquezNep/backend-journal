@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'core.apps.CoreConfig',
     'library.apps.LibraryConfig',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -73,6 +74,11 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'angelito_library.wsgi.application'
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
 
 
 # Database
