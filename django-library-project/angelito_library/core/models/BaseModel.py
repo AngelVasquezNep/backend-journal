@@ -24,8 +24,11 @@ class TimeStampedModel(models.Model):
     class Meta:
         abstract = True
 
+
 class SoftDeletionQuerySet(QuerySet):
-    pass
+    def hard_delete(self):
+        return super(SoftDeletionQuerySet, self).delete()
+
 
 class SoftDeletionManager(models.Manager):
     queryset_class = SoftDeletionQuerySet
