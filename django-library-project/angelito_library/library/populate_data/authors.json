@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Gabriel García Márquez",
+    "nationality": "COL"
+  },
+  {
+    "name": "Isabel Allende",
+    "nationality": "CHL"
+  },
+  {
+    "name": "Julio Cortázar",
+    "nationality": "ARG"
+  },
+  {
+    "name": "Mario Vargas Llosa",
+    "nationality": "PER"
+  },
+  {
+    "name": "Jorge Luis Borges",
+    "nationality": "ARG"
+  },
+  {
+    "name": "Pablo Neruda",
+    "nationality": "CHL"
+  },
+  {
+    "name": "Carlos Fuentes",
+    "nationality": "MEX"
+  },
+  {
+    "name": "Octavio Paz",
+    "nationality": "MEX"
+  },
+  {
+    "name": "Gabriela Mistral",
+    "nationality": "CHL"
+  },
+  {
+    "name": "Laura Esquivel",
+    "nationality": "MEX"
+  },
+  {
+    "name": "Horacio Quiroga",
+    "nationality": "URY"
+  },
+  {
+    "name": "Rómulo Gallegos",
+    "nationality": "VEN"
+  },
+  {
+    "name": "Jorge Amado",
+    "nationality": "BRA"
+  },
+  {
+    "name": "Clarice Lispector",
+    "nationality": "BRA"
+  },
+  {
+    "name": "Rubén Darío",
+    "nationality": "NIC"
+  },
+  {
+    "name": "Juan Rulfo",
+    "nationality": "MEX"
+  },
+  {
+    "name": "Alfonsina Storni",
+    "nationality": "ARG"
+  },
+  {
+    "name": "Federico García Lorca",
+    "nationality": "ESP"
+  },
+  {
+    "name": "Miguel de Cervantes",
+    "nationality": "ESP"
+  },
+  {
+    "name": "Ana María Matute",
+    "nationality": "ESP"
+  }
+]
