@@ -1,6 +1,5 @@
 from django.db import models
 from djmoney.models.fields import MoneyField
-from djmoney.money import Money
 from core.models import BaseModel
 
 
@@ -51,6 +50,9 @@ class Book(BaseModel):
 
     def in_stock(self) -> bool:
       return self.copies > 0
+    
+    def main_author(self) -> Author:
+      return self.authors.first()
 
 
 def run():

@@ -1,5 +1,6 @@
 import os
 import json
+from djmoney.money import Money
 from library.models import Author, Book
 
 current_dir = os.path.dirname(__file__)
@@ -24,7 +25,9 @@ def populate():
 
     for raw_book in books:
         author_ids = raw_book.pop('authors')
-        book = Book.objects.create(**raw_book)
+        price = raw_book.pop('price')
+        book = Book.objects.create(**raw_book,
+                                   price=Money(**price))
         # Access authors by index using the author_ids list
         author_ids = [all_authors[author_id -1].pk for author_id in author_ids]
         authors = Author.objects.filter(pk__in=author_ids)
