@@ -31,6 +31,7 @@ Sharing recipes has become a popular way for food enthusiasts to connect, discov
    - **Tagging and Categorization**: Recipes can be tagged and categorized by cuisine type, meal type (e.g., breakfast, dinner), and dietary restrictions (e.g., vegetarian, gluten-free).
 
 5. **Notifications**:
+
    - **Activity Notifications**: Users receive notifications when someone likes their recipe, comments on their recipe, or follows them.
    - **Recipe Updates**: Users can opt-in to receive updates when a recipe they follow is modified or updated.
 
