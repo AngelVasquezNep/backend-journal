@@ -3,22 +3,24 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
-class CreateUser:
+class CreateUserService:
     @staticmethod
-    def create_client_user(
+    def create_user(
         username,
         email,
-        first_name,
-        last_name,
         password=None,
+        first_name=None,
+        last_name=None,
+        is_active=True,
+        is_superuser=True,
     ):
         user = User.objects.create(
             username=username,
             email=email,
             first_name=first_name,
             last_name=last_name,
-            is_active=True,
-            is_superuser=False,
+            is_active=is_active,
+            is_superuser=is_superuser,
         )
 
         if password:
@@ -26,3 +28,20 @@ class CreateUser:
             user.save()
 
         return user
+
+    @staticmethod
+    def create_client_user(
+        username,
+        email,
+        password,
+        first_name=None,
+        last_name=None,
+    ):
+        return CreateUserService.create_user(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            password=password,
+            is_superuser=False,
+        )

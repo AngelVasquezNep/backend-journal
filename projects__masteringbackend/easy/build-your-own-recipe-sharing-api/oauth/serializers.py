@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer as BaseTokenObtainPairSerializer
-from core.services.users import CreateUser
+from core.services.users import CreateUserService
 
 User = get_user_model()
 
@@ -49,7 +49,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        user = CreateUser.create_client_user(
+        user = CreateUserService.create_client_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
