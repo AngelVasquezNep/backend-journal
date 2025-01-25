@@ -1,4 +1,5 @@
 from rest_framework import viewsets, serializers
+from django_filters import rest_framework as filters
 from recipe.permissions import IsRecipeOwnerOrReadOnly
 from recipe.models import Recipe, RecipeAttributeType
 
@@ -58,10 +59,25 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
 
+class RecipeFilter(filters.FilterSet):
+    cuisine = filters.CharFilter(field_name='cuisine__value', lookup_expr='exact')
+    dietary = filters.CharFilter(field_name='dietary__value', lookup_expr='exact')
+    ingredients = filters.CharFilter(field_name='ingredients__value', lookup_expr='exact')
+    keywords = filters.CharFilter(field_name='keywords__value', lookup_expr='exact')
+    difficulty = filters.CharFilter(field_name='difficulty', lookup_expr='exact')
+    time = filters.NumberFilter(field_name='time', lookup_expr='exact')
+
+    class Meta:
+        model = Recipe
+        fields = ('cuisine', 'dietary', 'ingredients', 'keywords', 'difficulty', 'time',)
+
+
 class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     queryset = Recipe.objects.all()
     permission_classes = (IsRecipeOwnerOrReadOnly,)
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = RecipeFilter
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
