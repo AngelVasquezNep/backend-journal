@@ -40,10 +40,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             'email',
             'first_name',
             'last_name',)
-        extra_kwargs = {
-            'first_name': {'required': True},
-            'last_name': {'required': True}
-        }
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -56,9 +52,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = CreateUser.create_client_user(
             username=validated_data['username'],
             email=validated_data['email'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
             password=validated_data['password'],
+            first_name=validated_data.get('first_name'),
+            last_name=validated_data.get('last_name'),
         )
 
         return user
