@@ -27,6 +27,7 @@ RECIPE_DATA = {
         ["Pancetta", "PANCETTA"],
         ["Parmesan Cheese", "PARMESAN_CHEESE"],
         ["Black Pepper", "BLACK_PEPPER"],
+        ["Mozzarella", "MOZZARELLA"],
     ],
     "KEYWORD": [
         ["Vegan", "VEGAN"],
