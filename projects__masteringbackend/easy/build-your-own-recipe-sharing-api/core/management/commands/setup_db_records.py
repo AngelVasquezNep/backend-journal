@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
-from recipe.models import RecipeAttributeType, CreatedBy
+from recipe.models import RecipeAttributeType
 
 User = get_user_model()
 
@@ -105,7 +105,7 @@ class Command(BaseCommand):
                 attribute = RecipeAttributeType(
                     label=label,
                     value=value,
-                    created_by=CreatedBy.SYSTEM,
+                    created_by=RecipeAttributeType.CreatedBy.SYSTEM,
                     relation_type=recipe_attribute_type,
                     author=system_user,
                 )

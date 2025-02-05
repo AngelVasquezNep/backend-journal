@@ -33,6 +33,8 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes',)
 
+    rate = models.IntegerField(default=0) # 0-5 -> Average rate of the recipe from RecipeRate model
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -43,13 +45,27 @@ class Recipe(models.Model):
         ordering = ('-id',)
         unique_together = ('title', 'author',)
 
+    def bookmark(self, user):
+        RecipeBookMark.objects.get_or_create(recipe=self, user=user)
 
-class CreatedBy(models.TextChoices):
-    SYSTEM = 'SYSTEM'
-    COMMUNITY = 'COMMUNITY'
+    def unbookmark(self, user):
+        RecipeBookMark.objects.filter(recipe=self, user=user).delete()
+
+    def add_rate(self, user, rate):
+        RecipeRate.objects.update_or_create(recipe=self, user=user, defaults={'rate': rate})
+        self.rate = self.rates.aggregate(models.Avg('rate'))['rate__avg'] or 0
+        self.save()
+
+    def add_comment(self, user, comment):
+        RecipeComment.objects.create(recipe=self, user=user, comment=comment)
+
 
 
 class RecipeAttributeType(models.Model):
+    class CreatedBy(models.TextChoices):
+        SYSTEM = 'SYSTEM'
+        COMMUNITY = 'COMMUNITY'
+
     class AttributeType(models.TextChoices):
         INGREDIENT = 'INGREDIENT'
         KEYWORD = 'KEYWORD'
@@ -68,3 +84,43 @@ class RecipeAttributeType(models.Model):
     class Meta:
         unique_together = ('value', 'relation_type',)
         ordering = ('-id',)
+
+
+class RecipeRate(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='rates')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rates')
+    rate = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('recipe', 'user',)
+        ordering = ('-id',)
+
+    def __str__(self):
+        return f"{self.recipe.title} | {self.user.username} rates {self.rate} stars"
+
+
+class RecipeBookMark(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='bookmarks')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookmarks')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('recipe', 'user',)
+        ordering = ('-id',)
+    
+    def __str__(self):
+        return f"{self.recipe.title} - {self.user.username}"
+
+
+class RecipeComment(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
+    comment = models.TextField(max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-id',)
+
+    def __str__(self):
+        return f"{self.recipe.title} - {self.user.username} - {self.comment[:20]}"
