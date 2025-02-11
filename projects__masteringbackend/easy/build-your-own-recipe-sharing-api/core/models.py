@@ -20,3 +20,21 @@ class User(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
 
     objects = UserManager()
+
+
+class UserFollowing(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
+    following = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'following',)
+
+    def __str__(self):
+        return f"{self.user.username} follows {self.following.username}"
+
+    def save(self, *args, **kwargs):
+        # Avoid circular following
+        if self.user == self.following:
+            raise ValueError("User can not follow itself")
+        super().save(*args, **kwargs)
