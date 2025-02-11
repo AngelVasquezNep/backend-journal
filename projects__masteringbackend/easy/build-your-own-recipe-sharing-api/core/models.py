@@ -1,9 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, UserManager as AbstractUserManager
 from django.utils.translation import gettext_lazy as _
 
 
-class UserManager(BaseUserManager):
+class UserManager(AbstractUserManager):
     def get_system_user(self):
         system_user, created = User.objects.get_or_create(
             username='system',
