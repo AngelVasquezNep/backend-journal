@@ -88,3 +88,7 @@ local_settings.py
 .env
 *.env.*
 db.sqlite3
+
+token.json
+credentials.json
+credentials.*.json
