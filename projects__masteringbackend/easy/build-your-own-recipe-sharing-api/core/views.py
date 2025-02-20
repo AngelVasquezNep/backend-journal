@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from core.models import UserFollowing
+from core.services.notifications import users as user_notifications_service
+
 
 User = get_user_model()
 
@@ -59,16 +61,25 @@ class UserFollowingSerializer(serializers.ModelSerializer):
         fields = ('following', 'created_at',)
 
 
+class UserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+
+
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
-    queryset = User.objects.none()
-    serializer_class = UserFollowingSerializer
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
     pagination_class = None
 
     @action(detail=True, methods=['post'])
     def follow(self, request, pk=None):
         user = get_object_or_404(User, pk=pk)
         UserFollowing.objects.get_or_create(user=request.user, following=user)
+        user_notifications_service.new_follower(
+            acting_user=request.user,
+            target_user=user,
+        )
         return Response(status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['delete'])

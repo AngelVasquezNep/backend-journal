@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from django_filters import rest_framework as filters
 from recipe.permissions import IsRecipeOwnerOrReadOnly, IsUserOwner
 from recipe.models import Recipe, RecipeAttributeType, RecipeRate, RecipeBookMark, RecipeComment
+from core.services.notifications import users as user_notifications_service
 
 
 class AuthorSerializer(serializers.Serializer):
@@ -118,6 +119,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def bookmark(self, request, pk=None):
         recipe = self.get_object()
         recipe.bookmark(request.user)
+        user_notifications_service.likes_recipe(acting_user=request.user, recipe=recipe)
         return Response(status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['delete'], url_path='unsave', url_name='unsave',
@@ -156,6 +158,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         comment = serializer.validated_data['comment']
         recipe.add_comment(request.user, comment)
+        user_notifications_service.comment_recipe(acting_user=request.user, recipe=recipe, comment=comment)
         return Response(status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['get'], permission_classes=[AllowAny])
