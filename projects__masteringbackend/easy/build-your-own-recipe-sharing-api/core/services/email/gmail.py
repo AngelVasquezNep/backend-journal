@@ -6,16 +6,12 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 from email.message import EmailMessage
-
-from tastybits.config import get_config
+from .interface import EmailServiceInterface
 
 
 logger = logging.getLogger(__name__)
 
-
-SENDER_EMAIL = get_config("SENDER_EMAIL")
 
 
 # If modifying these scopes, delete the file token.json.
@@ -27,7 +23,7 @@ SCOPES = [
 ]
 
 
-class GmailService:
+class GmailService(EmailServiceInterface):
     @staticmethod
     def _get_creds() -> Credentials:
         # creds: Credentials = service_account.Credentials.from_service_account_file("credentials.service_account.json", scopes=SCOPES)
@@ -56,7 +52,6 @@ class GmailService:
         To,
         Subject=None,
         Content=None,
-        From=SENDER_EMAIL,
     ):
         service = GmailService.service()
         message = EmailMessage()

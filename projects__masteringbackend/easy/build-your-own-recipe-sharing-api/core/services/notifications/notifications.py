@@ -25,4 +25,4 @@ class EmailService(NotificationsService):
     def send_one(recipient,
                  subject: Optional[str] = None,
                  body: Optional[str] = None,):
-        EmailSender(Senders.GMAIL).send_message(recipient, subject, body)
+        EmailSender(Senders.AWS).send_message(recipient, subject, body)

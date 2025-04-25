@@ -207,3 +207,12 @@ GET /notifications: Get notifications for user activity.
 
 - Provide comprehensive API documentation using tools like Swagger.
 - Create user guides and developer documentation to assist with integration and usage.
+
+
+# Notification
+
+## AWS
+
+```sh
+export AWS_PROFILE='...'
+```
