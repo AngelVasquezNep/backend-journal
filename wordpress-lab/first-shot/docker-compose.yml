@@ -1,0 +1,28 @@
+services:
+    db:
+        container_name: wordpress_db
+        image: mariadb:10
+        volumes:
+            - wplocalvolumen:/var/lib/mysql
+        environment:
+            - MYSQL_ROOT_PASSWORD=secret
+            - MYSQL_DATABASE=wordpress
+            - MYSQL_USER=manager
+            - MYSQL_PASSWORD=secret
+    web:
+        container_name: wordpress_web
+        image: wordpress:6
+        depends_on:
+            - db
+        volumes:
+            - ./wptargetfolder:/var/www/html
+        environment:
+            - WORDPRESS_DB_USER=manager
+            - WORDPRESS_DB_PASSWORD=secret
+            - WORDPRESS_DB_HOST=db
+            - WORDPRESS_DB_NAME=wordpress
+        ports:
+            - 8080:80
+
+volumes:
+    wplocalvolumen:

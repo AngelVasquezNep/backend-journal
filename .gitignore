@@ -275,3 +275,12 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+
+# WordPress
+wp-content/
+wp-includes/
+wp-admin/
+wp-includes/
+wp-includes/
+wplocalvolumen/
