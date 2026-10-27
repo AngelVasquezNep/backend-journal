@@ -1,0 +1,111 @@
+name: Taskify
+on:
+  push:
+    paths: ['projects/enterprise_knowledge_assistant/**', '.github/workflows/taskify.yml']
+  pull_request:
+    paths: ['projects/enterprise_knowledge_assistant/**', '.github/workflows/taskify.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: projects/enterprise_knowledge_assistant
+
+jobs:
+  service:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: identity
+            python: '3.14'
+          - service: knowledge
+            python: '3.12'
+          - service: chat
+            python: '3.12'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --project services/${{ matrix.service }} --locked
+      - name: Formatting and documentation
+        run: uv run --project services/${{ matrix.service }} ruff check services/${{ matrix.service }}
+      - run: uv run --project services/${{ matrix.service }} ruff format --check services/${{ matrix.service }}
+      - name: Service-owned type configuration
+        working-directory: projects/enterprise_knowledge_assistant/services/${{ matrix.service }}
+        run: uv run mypy src
+      - name: Inward dependencies
+        working-directory: projects/enterprise_knowledge_assistant/services/${{ matrix.service }}
+        run: uv run lint-imports
+      - run: python infra/init-env.py
+      - run: docker compose up -d --wait postgres
+      - name: Real owned storage and parser contracts
+        if: matrix.service == 'knowledge'
+        run: docker compose run --rm --build knowledge-test
+      - name: Real owned storage contracts
+        if: matrix.service != 'knowledge'
+        working-directory: projects/enterprise_knowledge_assistant/services/${{ matrix.service }}
+        env:
+          TASKIFY_RUN_DB_TESTS: '1'
+        run: uv run pytest tests -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: corepack enable
+      - run: pnpm --dir frontend install --frozen-lockfile
+      - run: pnpm --dir frontend run typecheck
+      - run: pnpm --dir frontend run lint
+      - run: pnpm --dir frontend run build
+      - run: pnpm --dir frontend run test --run
+      - run: pnpm --dir frontend exec playwright install --with-deps chromium
+      - name: Source-alias browser smoke
+        run: pnpm --dir frontend run test:e2e imports.spec.ts
+        env:
+          TASKIFY_WEB_ONLY: '1'
+
+  composed-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - run: uv sync --project services/knowledge --locked
+      - run: python infra/init-env.py
+      - run: docker compose build identity knowledge chat web
+      - run: docker compose up -d --wait postgres
+      - run: docker compose run --rm identity-migrate
+      - run: docker compose run --rm knowledge-migrate
+      - run: docker compose run --rm chat-migrate
+      - run: docker compose up -d identity knowledge knowledge-worker chat chat-worker web
+      - name: Wait for nonpublic readiness without provider calls
+        run: |
+          for attempt in $(seq 1 40); do
+            if docker compose exec -T chat python -c 'import httpx; httpx.get("http://127.0.0.1:8000/health/ready").raise_for_status()'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+      - run: uv run --project services/knowledge python tests/fixtures/build_corpus.py --output /tmp/taskify-ci-corpus
+      - name: Host operator/public-flow fixtures
+        run: uv run --project services/knowledge python tests/fixtures/provision.py --output /tmp/taskify-ci-fixtures.json --corpus /tmp/taskify-ci-corpus --users-per-company 2
+      - name: All public-operation schemas and private ownership
+        env:
+          TASKIFY_FIXTURES: /tmp/taskify-ci-fixtures.json
+        run: uv run --project services/knowledge pytest tests/integration/test_contract_compatibility.py -q
+      - name: Isolated owned backup and pending-work recovery
+        env:
+          TASKIFY_RUN_RESTORE: '1'
+        run: |
+          uv sync --project services/identity --python 3.14 --locked
+          uv sync --project services/chat --python 3.12 --locked
+          uv run --project services/knowledge pytest tests/integration/test_restore_recovery.py -q

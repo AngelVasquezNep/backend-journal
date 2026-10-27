@@ -1,0 +1,54 @@
+[project]
+name = "taskify-identity"
+version = "0.1.0"
+description = "Identity-owned company, account and first-party session service."
+requires-python = ">=3.14,<3.15"
+dependencies = [
+  "fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1",
+  "sqlalchemy>=2.0,<3", "psycopg[binary]>=3.2,<4", "alembic>=1.14,<2",
+  "pwdlib[argon2]>=0.2,<1", "typer>=0.15,<1", "httpx>=0.28,<1",
+]
+
+[project.scripts]
+taskify-identity = "taskify_identity.bootstrap:main"
+taskify-admin = "taskify_identity.adapters.inbound.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=8.3,<9", "pytest-cov>=6,<8", "ruff>=0.11,<1", "mypy>=1.15,<2", "import-linter>=2.3,<3", "jsonschema>=4.23,<5"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short --show-capture=no"
+markers = ["integration: requires real PostgreSQL storage"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "D"]
+ignore = ["D203", "D213"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+
+[tool.importlinter]
+root_package = "taskify_identity"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Framework-free core"
+type = "forbidden"
+source_modules = ["taskify_identity.domain", "taskify_identity.application"]
+forbidden_modules = ["taskify_identity.adapters", "taskify_identity.bootstrap", "fastapi", "pydantic", "sqlalchemy", "psycopg", "httpx", "pwdlib", "typer"]
+
+[[tool.importlinter.contracts]]
+name = "Domain does not depend on application"
+type = "forbidden"
+source_modules = ["taskify_identity.domain"]
+forbidden_modules = ["taskify_identity.application"]

@@ -1,0 +1,55 @@
+[project]
+name = "taskify-chat"
+version = "0.1.0"
+description = "Private saved conversations and bounded company-answer orchestration."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1",
+  "sqlalchemy>=2.0,<3", "psycopg[binary]>=3.2,<4", "alembic>=1.14,<2",
+  "httpx>=0.28,<1", "langgraph>=1,<2", "langchain-core>=1,<2",
+  "langchain-openai>=1,<2", "tiktoken>=0.9,<1",
+]
+
+[project.scripts]
+taskify-chat = "taskify_chat.bootstrap:main"
+taskify-answer = "taskify_chat.adapters.inbound.worker:main"
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=8.3,<9", "pytest-cov>=6,<8", "ruff>=0.11,<1", "mypy>=1.15,<2", "import-linter>=2.3,<3", "jsonschema>=4.23,<5"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short --show-capture=no"
+markers = ["integration: requires real PostgreSQL storage"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "D"]
+ignore = ["D203", "D213"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.importlinter]
+root_package = "taskify_chat"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Framework-free core"
+type = "forbidden"
+source_modules = ["taskify_chat.domain", "taskify_chat.application"]
+forbidden_modules = ["taskify_chat.adapters", "taskify_chat.bootstrap", "fastapi", "pydantic", "sqlalchemy", "psycopg", "httpx", "langgraph", "langchain_core", "langchain_openai"]
+
+[[tool.importlinter.contracts]]
+name = "Domain does not depend on application"
+type = "forbidden"
+source_modules = ["taskify_chat.domain"]
+forbidden_modules = ["taskify_chat.application"]

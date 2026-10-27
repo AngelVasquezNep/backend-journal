@@ -1,0 +1,60 @@
+[project]
+name = "taskify-knowledge"
+version = "0.1.0"
+description = "Company-owned document ingestion and current-evidence retrieval service."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1",
+  "sqlalchemy>=2.0,<3", "psycopg[binary]>=3.2,<4", "alembic>=1.14,<2",
+  "httpx>=0.28,<1", "pgvector>=0.3,<1", "python-multipart>=0.0.20,<1",
+  "langchain-openai>=1,<2", "langchain-text-splitters>=1,<2", "tiktoken>=0.9,<1",
+  "regex>=2024.11,<2027", "pypdf>=5,<7", "pypdfium2>=4.30,<6", "python-docx>=1.1,<2", "Pillow>=11,<13",
+]
+
+[project.scripts]
+taskify-knowledge = "taskify_knowledge.bootstrap:main"
+taskify-ingest = "taskify_knowledge.adapters.inbound.worker:main"
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=8.3,<9", "pytest-cov>=6,<8", "ruff>=0.11,<1", "mypy>=1.15,<2", "import-linter>=2.3,<3", "jsonschema>=4.23,<5", "types-regex>=2024.11"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short --show-capture=no"
+markers = ["integration: requires real PostgreSQL/pgvector storage"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "D"]
+ignore = ["D203", "D213"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["pypdfium2.*"]
+ignore_missing_imports = true
+
+[tool.importlinter]
+root_package = "taskify_knowledge"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Framework-free core"
+type = "forbidden"
+source_modules = ["taskify_knowledge.domain", "taskify_knowledge.application"]
+forbidden_modules = ["taskify_knowledge.adapters", "taskify_knowledge.bootstrap", "fastapi", "pydantic", "sqlalchemy", "psycopg", "httpx", "langchain_openai", "langchain_text_splitters", "pypdf", "PIL", "pgvector"]
+
+[[tool.importlinter.contracts]]
+name = "Domain does not depend on application"
+type = "forbidden"
+source_modules = ["taskify_knowledge.domain"]
+forbidden_modules = ["taskify_knowledge.application"]

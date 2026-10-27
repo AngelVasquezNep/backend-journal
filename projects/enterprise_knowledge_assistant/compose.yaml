@@ -1,0 +1,155 @@
+name: taskify
+
+x-common: &common
+  TASKIFY_ENV: ${TASKIFY_ENV:-development}
+  PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+  LANGCHAIN_TRACING_V2: 'false'
+  LANGSMITH_TRACING: 'false'
+
+x-knowledge: &knowledge
+  image: taskify-knowledge
+  environment: &knowledge-env
+    <<: *common
+    DATABASE_URL: postgresql+psycopg://knowledge_runtime:${KNOWLEDGE_DB_PASSWORD}@postgres/knowledge
+    IDENTITY_URL: http://identity:8000
+    SERVICE_CREDENTIAL: ${KNOWLEDGE_API_CREDENTIAL}
+    WORKER_CREDENTIAL: ${KNOWLEDGE_WORKER_CREDENTIAL}
+    CHAT_API_CREDENTIAL: ${CHAT_API_CREDENTIAL}
+    CHAT_WORKER_CREDENTIAL: ${CHAT_WORKER_CREDENTIAL}
+    KNOWLEDGE_STORAGE_ROOT: /data/originals
+    AI_MODE: ${AI_MODE:-stub}
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+    EMBEDDING_DIMENSIONS: '1536'
+    PIPELINE_VERSION: ${PIPELINE_VERSION:-pipeline-v1}
+  volumes: ['originals:/data/originals']
+  depends_on:
+    postgres: { condition: service_healthy }
+    identity: { condition: service_started }
+
+x-chat: &chat
+  image: taskify-chat
+  environment: &chat-env
+    <<: *common
+    DATABASE_URL: postgresql+psycopg://chat_runtime:${CHAT_DB_PASSWORD}@postgres/chat
+    IDENTITY_URL: http://identity:8000
+    KNOWLEDGE_URL: http://knowledge:8000
+    SERVICE_CREDENTIAL: ${CHAT_API_CREDENTIAL}
+    WORKER_CREDENTIAL: ${CHAT_WORKER_CREDENTIAL}
+    AI_MODE: ${AI_MODE:-stub}
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    OPEN_AI_MODEL: ${OPEN_AI_MODEL:-}
+  depends_on:
+    postgres: { condition: service_healthy }
+    identity: { condition: service_started }
+    knowledge: { condition: service_started }
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16@sha256:7b822b0aac60967beb1ea5e576b8602c94c300a157d187f385ae3e0da199b90a
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a private POSTGRES_PASSWORD in .env}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?Set IDENTITY_DB_PASSWORD}
+      IDENTITY_MIGRATION_PASSWORD: ${IDENTITY_MIGRATION_PASSWORD:?Set IDENTITY_MIGRATION_PASSWORD}
+      KNOWLEDGE_DB_PASSWORD: ${KNOWLEDGE_DB_PASSWORD:?Set KNOWLEDGE_DB_PASSWORD}
+      KNOWLEDGE_MIGRATION_PASSWORD: ${KNOWLEDGE_MIGRATION_PASSWORD:?Set KNOWLEDGE_MIGRATION_PASSWORD}
+      CHAT_DB_PASSWORD: ${CHAT_DB_PASSWORD:?Set CHAT_DB_PASSWORD}
+      CHAT_MIGRATION_PASSWORD: ${CHAT_MIGRATION_PASSWORD:?Set CHAT_MIGRATION_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/bootstrap.sql:/docker-entrypoint-initdb.d/001-bootstrap.sql:ro
+    ports: ['127.0.0.1:55432:5432']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  identity:
+    image: taskify-identity
+    build: { context: ., dockerfile: services/identity/Dockerfile }
+    environment:
+      <<: *common
+      DATABASE_URL: postgresql+psycopg://identity_runtime:${IDENTITY_DB_PASSWORD}@postgres/identity
+      SESSION_HMAC_KEY: ${SESSION_HMAC_KEY:?Set SESSION_HMAC_KEY}
+      KNOWLEDGE_API_CREDENTIAL: ${KNOWLEDGE_API_CREDENTIAL:?Set KNOWLEDGE_API_CREDENTIAL}
+      KNOWLEDGE_WORKER_CREDENTIAL: ${KNOWLEDGE_WORKER_CREDENTIAL:?Set KNOWLEDGE_WORKER_CREDENTIAL}
+      CHAT_API_CREDENTIAL: ${CHAT_API_CREDENTIAL:?Set CHAT_API_CREDENTIAL}
+      CHAT_WORKER_CREDENTIAL: ${CHAT_WORKER_CREDENTIAL:?Set CHAT_WORKER_CREDENTIAL}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  knowledge:
+    <<: *knowledge
+    build: { context: ., dockerfile: services/knowledge/Dockerfile }
+
+  knowledge-worker:
+    <<: *knowledge
+    command: ['taskify-ingest']
+    environment:
+      <<: *knowledge-env
+      SERVICE_CREDENTIAL: ${KNOWLEDGE_WORKER_CREDENTIAL}
+
+  chat:
+    <<: *chat
+    build: { context: ., dockerfile: services/chat/Dockerfile }
+
+  chat-worker:
+    <<: *chat
+    command: ['taskify-answer']
+    environment:
+      <<: *chat-env
+      SERVICE_CREDENTIAL: ${CHAT_WORKER_CREDENTIAL}
+
+  web:
+    build: { context: ., dockerfile: frontend/Dockerfile }
+    ports: ['127.0.0.1:8080:8080']
+    depends_on: [identity, knowledge, chat]
+
+  identity-migrate:
+    profiles: ['tools']
+    image: taskify-identity
+    command: ['alembic', 'upgrade', 'head']
+    environment:
+      DATABASE_URL: postgresql+psycopg://identity_migration:${IDENTITY_MIGRATION_PASSWORD}@postgres/identity
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  knowledge-migrate:
+    profiles: ['tools']
+    image: taskify-knowledge
+    command: ['alembic', 'upgrade', 'head']
+    environment:
+      DATABASE_URL: postgresql+psycopg://knowledge_migration:${KNOWLEDGE_MIGRATION_PASSWORD}@postgres/knowledge
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  chat-migrate:
+    profiles: ['tools']
+    image: taskify-chat
+    command: ['alembic', 'upgrade', 'head']
+    environment:
+      DATABASE_URL: postgresql+psycopg://chat_migration:${CHAT_MIGRATION_PASSWORD}@postgres/chat
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  knowledge-test:
+    profiles: ['test']
+    build: { context: ., dockerfile: services/knowledge/Dockerfile }
+    command: ['pytest', 'tests', '-q']
+    environment:
+      TASKIFY_RUN_DB_TESTS: '1'
+      TASKIFY_TEST_PROJECT_ROOT: /workspace
+      TASKIFY_TEST_DATABASE_URL: postgresql+psycopg://knowledge_runtime:${KNOWLEDGE_DB_PASSWORD}@postgres/knowledge_test
+      TASKIFY_TEST_MIGRATION_DATABASE_URL: postgresql+psycopg://knowledge_migration:${KNOWLEDGE_MIGRATION_PASSWORD}@postgres/knowledge_test
+      AI_MODE: stub
+      LANGCHAIN_TRACING_V2: 'false'
+      LANGSMITH_TRACING: 'false'
+    volumes:
+      - ./tests/fixtures:/workspace/tests/fixtures:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+
+volumes:
+  postgres-data:
+  originals:
