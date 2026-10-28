@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { ApplicationFailure } from '@/domain/common';
 import type { AuthSession } from '@/domain/identity';
 import type { AuthController } from '@/application/auth';
+import { Icon, PasswordField } from '@/adapters/inbound/react/UI';
 
 /** Render accessible current/new/confirmation fields and discard credentials after submission. */
 export function ChangePasswordPage({ auth, onChanged }: { auth: AuthController; onChanged: (session: AuthSession) => void }) {
@@ -21,10 +22,10 @@ export function ChangePasswordPage({ auth, onChanged }: { auth: AuthController; 
     catch (error) { setError(error instanceof ApplicationFailure ? error.message : 'Password change is temporarily unavailable.'); }
     finally { setCurrent(''); setReplacement(''); setConfirmation(''); setPending(false); }
   }
-  return <section className="auth-panel"><h1>Change your initial password</h1><p>Choose a different password with 12–128 characters to continue.</p><form onSubmit={(event) => { void submit(event); }}>
-    <label htmlFor="current-password">Current password</label><input id="current-password" type="password" autoComplete="current-password" required value={current} onChange={(event) => { setCurrent(event.target.value); }} />
-    <label htmlFor="new-password">New password</label><input id="new-password" type="password" autoComplete="new-password" required value={replacement} onChange={(event) => { setReplacement(event.target.value); }} />
-    <label htmlFor="confirm-password">Confirm new password</label><input id="confirm-password" type="password" autoComplete="new-password" required value={confirmation} onChange={(event) => { setConfirmation(event.target.value); }} />
+  return <section className="auth-panel password-panel"><span className="auth-icon"><Icon name="lock" /></span><h2>Make this workspace yours.</h2><p>Change your initial password before you continue. Choose a different password with 12–128 characters.</p><form onSubmit={(event) => { void submit(event); }}>
+    <PasswordField id="current-password" label="Current password" autoComplete="current-password" value={current} onChange={setCurrent} disabled={pending} />
+    <PasswordField id="new-password" label="New password" autoComplete="new-password" value={replacement} onChange={setReplacement} disabled={pending} hint="Use 12–128 characters and a password you haven't used here." />
+    <PasswordField id="confirm-password" label="Confirm new password" autoComplete="new-password" value={confirmation} onChange={setConfirmation} disabled={pending} />
     {error && <p role="alert">{error}</p>}<button disabled={pending}>{pending ? 'Changing password…' : 'Change password'}</button>
-  </form></section>;
+  </form><div className="auth-security"><Icon name="lock" />Your new password is only yours to know.</div></section>;
 }

@@ -16,6 +16,32 @@ def required(environment: Mapping[str, str], key: str) -> str:
     return value
 
 
+def validate_tracing(environment: Mapping[str, str]) -> None:
+    """Validate opt-in tracing locally; keep private inputs and outputs out of exported runs."""
+    enabled = environment.get("LANGSMITH_TRACING", "false")
+    if enabled not in ("true", "false"):
+        raise ValueError("LANGSMITH_TRACING must be true or false.")
+    for key in ("LANGCHAIN_TRACING_V2", "LANGSMITH_TRACING_V2"):
+        if key in environment and environment[key] != enabled:
+            raise ValueError(f"{key} must match LANGSMITH_TRACING.")
+    if enabled == "false":
+        return
+    required(environment, "LANGSMITH_API_KEY")
+    if not environment.get("LANGSMITH_PROJECT", "taskify-local").strip():
+        raise ValueError("LANGSMITH_PROJECT must not be blank.")
+    endpoint = urlparse(environment.get("LANGSMITH_ENDPOINT", "https://api.smith.langchain.com"))
+    if (
+        endpoint.scheme != "https"
+        or not endpoint.hostname
+        or endpoint.username
+        or endpoint.password
+    ):
+        raise ValueError("LANGSMITH_ENDPOINT must be an HTTPS API endpoint without credentials.")
+    for key in ("LANGSMITH_HIDE_INPUTS", "LANGSMITH_HIDE_OUTPUTS"):
+        if environment.get(key) != "true":
+            raise ValueError(f"{key}=true is required when tracing is enabled.")
+
+
 @dataclass(frozen=True)
 class Settings:
     """Immutable service-owned settings; credentials are excluded from representations."""
@@ -81,9 +107,7 @@ class Settings:
         ai_mode = env.get("AI_MODE", "stub")
         if ai_mode not in ("stub", "openai") or (mode == "production" and ai_mode != "openai"):
             raise ValueError("AI_MODE must be openai in production; stub is development/test only.")
-        for key in ("LANGCHAIN_TRACING_V2", "LANGSMITH_TRACING"):
-            if env.get(key, "false").lower() not in ("false", "0", ""):
-                raise ValueError("Third-party content tracing must remain disabled.")
+        validate_tracing(env)
         values: dict[str, Any] = {}
         values["identity_url"] = required(env, "IDENTITY_URL")
         values["service_credential"] = required(env, "SERVICE_CREDENTIAL")

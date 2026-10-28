@@ -1,11 +1,13 @@
 """Explicit finite vector-space adapters; deterministic fixtures never prove real-provider quality."""
 
 import hashlib
+import logging
 import math
 import re
 
 import tiktoken
 from langchain_openai import OpenAIEmbeddings
+from langsmith import traceable
 from pydantic import SecretStr
 
 from taskify_knowledge.domain.errors import ApplicationError, DependencyUnavailable
@@ -87,10 +89,16 @@ class OpenAIEmbedder:
             output.extend(self.send(batch))
         return tuple(output)
 
+    @traceable(name="taskify.knowledge.embed", run_type="embedding", tags=["taskify", "knowledge"])
     def send(self, texts: list[str]) -> tuple[tuple[float, ...], ...]:
         """Perform one bounded provider request; private provider diagnostics never leave this adapter."""
         try:
             vectors = self.client.embed_documents(texts)
-        except Exception:
+        except Exception as error:
+            logging.getLogger("taskify.ingestion").warning(
+                "embedding_unavailable error_type=%s status=%s",
+                type(error).__name__,
+                getattr(error, "status_code", None),
+            )
             raise DependencyUnavailable() from None
         return validate_vectors(vectors, len(texts))

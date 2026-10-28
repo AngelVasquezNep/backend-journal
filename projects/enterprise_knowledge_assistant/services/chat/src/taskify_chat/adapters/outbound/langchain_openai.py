@@ -106,7 +106,7 @@ class OpenAIAnswerer:
                         ),
                     ),
                 ],
-                config={"callbacks": []},
+                config={"run_name": "taskify.chat.scope"},
             )
             if (
                 not isinstance(output, ScopeSchema)
@@ -135,7 +135,7 @@ class OpenAIAnswerer:
                         ),
                     ),
                 ],
-                config={"callbacks": []},
+                config={"run_name": "taskify.chat.generate"},
             )
             if not isinstance(output, AnswerSchema) or len(output.claims) > 12:
                 raise ValueError()
@@ -168,7 +168,7 @@ class OpenAIAnswerer:
                         ),
                     ),
                 ],
-                config={"callbacks": []},
+                config={"run_name": "taskify.chat.verify"},
             )
             if not isinstance(output, VerifySchema):
                 raise ValueError()

@@ -248,7 +248,9 @@ and normalized chunk text for embeddings. Only backend adapters hold API keys. U
 and no hosted provider file stores, tools, background responses, or conversations. This avoids
 opting into stored response state but is not a claim of Zero Data Retention; provider abuse
 monitoring and account-specific controls still apply. Keep private text, passwords, cookies,
-API keys, and session/CSRF tokens out of logs and optional tracing; third-party tracing is off.
+API keys, and session/CSRF tokens out of logs and optional tracing. Third-party tracing is
+off by default; optional LangSmith graph/model/embedding tracing requires hidden inputs
+and outputs. See the [tracing guide](../../infra/tracing.md) for configuration and limits.
 
 Use pytest, HTTPX, real PostgreSQL/pgvector integration fixtures, frontend Vitest/Testing Library,
 and Playwright acceptance scenarios. CI uses deterministic provider doubles. A separately enabled

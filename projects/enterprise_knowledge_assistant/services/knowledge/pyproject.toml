@@ -7,7 +7,7 @@ dependencies = [
   "fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1",
   "sqlalchemy>=2.0,<3", "psycopg[binary]>=3.2,<4", "alembic>=1.14,<2",
   "httpx>=0.28,<1", "pgvector>=0.3,<1", "python-multipart>=0.0.20,<1",
-  "langchain-openai>=1,<2", "langchain-text-splitters>=1,<2", "tiktoken>=0.9,<1",
+  "langchain-openai>=1,<2", "langchain-text-splitters>=1,<2", "langsmith>=0.14.11,<1", "tiktoken>=0.9,<1",
   "regex>=2024.11,<2027", "pypdf>=5,<7", "pypdfium2>=4.30,<6", "python-docx>=1.1,<2", "Pillow>=11,<13",
 ]
 

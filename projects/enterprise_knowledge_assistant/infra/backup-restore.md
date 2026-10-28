@@ -15,7 +15,8 @@ Restoring database state does not replace secret rotation or invalidate a compro
 session; revoke sessions through an explicitly reviewed operator procedure when needed.
 
 Before a real backup, inspect readiness and record application image digests, migration
-heads, pipeline/model versions, database server version and the private volume identity.
+heads, pipeline/model versions, database server version and the storage paths
+(`data/postgres/` and `data/originals/` in the local Compose setup).
 Freeze all writes, including CLI provisioning and cleanup:
 
 ```sh

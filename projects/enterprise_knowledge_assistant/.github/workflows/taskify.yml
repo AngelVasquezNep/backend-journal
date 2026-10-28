@@ -80,21 +80,9 @@ jobs:
           python-version: '3.12'
       - run: uv sync --project services/knowledge --locked
       - run: python infra/init-env.py
-      - run: docker compose build identity knowledge chat web
-      - run: docker compose up -d --wait postgres
-      - run: docker compose run --rm identity-migrate
-      - run: docker compose run --rm knowledge-migrate
-      - run: docker compose run --rm chat-migrate
-      - run: docker compose up -d identity knowledge knowledge-worker chat chat-worker web
-      - name: Wait for nonpublic readiness without provider calls
-        run: |
-          for attempt in $(seq 1 40); do
-            if docker compose exec -T chat python -c 'import httpx; httpx.get("http://127.0.0.1:8000/health/ready").raise_for_status()'; then
-              exit 0
-            fi
-            sleep 2
-          done
-          exit 1
+      - run: docker compose build
+      - name: Start with automatic database configuration, migrations, and readiness
+        run: docker compose up -d --wait
       - run: uv run --project services/knowledge python tests/fixtures/build_corpus.py --output /tmp/taskify-ci-corpus
       - name: Host operator/public-flow fixtures
         run: uv run --project services/knowledge python tests/fixtures/provision.py --output /tmp/taskify-ci-fixtures.json --corpus /tmp/taskify-ci-corpus --users-per-company 2

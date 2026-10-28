@@ -135,7 +135,7 @@ class LangGraphWorkflow:
         if decision.intent in ("unrelated", "action_request"):
             draft = AnswerDraft(
                 "refusal",
-                message="I can only answer questions using your company’s information. I cannot perform actions or answer unrelated requests.",
+                message="I can only answer questions using your company's information. I cannot perform actions or answer unrelated requests.",
             )
         elif decision.intent == "ambiguous" or not decision.query:
             draft = AnswerDraft(
@@ -238,7 +238,11 @@ class LangGraphWorkflow:
                 async with asyncio.timeout(max(0.0, deadline - time.monotonic())):
                     output = await self.graph.ainvoke(
                         State(question=question, history=selected, omitted=omitted),
-                        {"recursion_limit": 12, "callbacks": []},
+                        {
+                            "recursion_limit": 12,
+                            "run_name": "taskify.chat.answer",
+                            "tags": ["taskify", "chat"],
+                        },
                         context=context,
                     )
                 return Candidate(
@@ -257,6 +261,7 @@ class LangGraphWorkflow:
                     in ("authentication_required", "verification_failed", "dependency_unavailable")
                     else "dependency_unavailable"
                 )
+
                 return Candidate(
                     AnswerDraft(
                         "failure", message="The answer could not be completed. Please retry."

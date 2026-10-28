@@ -4,6 +4,6 @@ import { APPLICATION_NAME } from '@/composition/title';
 
 test('boots the accessible shell with source imports resolved', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(APPLICATION_NAME);
+  await expect(page).toHaveTitle(new RegExp(`${APPLICATION_NAME}$`, 'u'));
   await expect(page.getByRole('main').getByRole('heading', { name: APPLICATION_NAME })).toBeVisible();
 });

@@ -89,13 +89,13 @@ def install_boundaries(app: FastAPI) -> None:
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Request-ID"] = str(correlation)
         response.headers["X-Content-Type-Options"] = "nosniff"
-        logger.info(
-            "request_id=%s method=%s status=%s elapsed_ms=%d",
-            correlation,
-            request.method,
-            response.status_code,
-            int((time.monotonic() - started) * 1000),
-        )
+        # logger.info(
+        #     "request_id=%s method=%s status=%s elapsed_ms=%d",
+        #     correlation,
+        #     request.method,
+        #     response.status_code,
+        #     int((time.monotonic() - started) * 1000),
+        # )
         return response
 
     @app.exception_handler(ApplicationError)

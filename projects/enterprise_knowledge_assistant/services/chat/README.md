@@ -85,7 +85,9 @@ An expired/reclaimed worker cannot reuse a previous source receipt. Whole-turn r
 may repeat provider cost; there is no durable node-level resume guarantee.
 
 Logs/metrics exclude chat text, evidence, prompts, passwords, API keys, cookies and CSRF
-secrets. Third-party tracing is off. API source hydration uses Chat API scope; retrieval
+secrets. LangSmith tracing is off by default; opt-in graph/model traces hide inputs and
+outputs as described in the [tracing guide](../../infra/tracing.md).
+API source hydration uses Chat API scope; retrieval
 and release use worker scope. Internal URLs are nonpublic and require encrypted traffic
 in production. Contracts live under `specs/001-company-knowledge-qa/contracts/`.
 
@@ -95,5 +97,6 @@ Counters contain only request/status-class/time and readiness totals; they are p
 local and reset on restart. Workers emit fixed outcome/error-code/attempt/count fields,
 never documents, queries, prompts, chat text, identities or secrets. Normal readiness
 makes no paid provider call; Knowledge/Chat additionally check configured first-party
-dependency readiness over bounded nonredirecting HTTP. Third-party tracing remains off.
+dependency readiness over bounded nonredirecting HTTP. Optional LangSmith exports are
+outside readiness checks and do not require a paid provider probe.
 See `infra/backup-restore.md` for consistent owned-database/private-original recovery.

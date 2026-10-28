@@ -10,28 +10,33 @@ Use Docker with Compose, uv, Python 3.14 for Identity and Python 3.12 for Knowle
 Frontend development uses Node 22.12+ and the pnpm version pinned in package.json.
 Run commands from this project directory; the enclosing Git repository root is two levels above it.
 
+For an existing named-volume installation, choose a
+[fresh start or data migration](../../infra/local-storage.md) before starting services.
+
 ```sh
 python3 infra/init-env.py
-docker compose build identity knowledge chat web
-docker compose up -d postgres
-docker compose run --rm identity-migrate
-docker compose run --rm knowledge-migrate
-docker compose run --rm chat-migrate
-docker compose up -d identity knowledge knowledge-worker chat chat-worker web
+docker compose build
+mkdir -p data/postgres data/originals
+docker compose run --rm --no-deps --user root --entrypoint chown knowledge 10001:10001 /data/originals
+docker compose up -d
 docker compose ps
 ```
 
 The generator creates an ignored 0600 `.env` with independent random development secrets,
 stub mode and blank provider key/model. It refuses to overwrite existing configuration.
-Keep the existing local `.env` if already initialized; coordinate PostgreSQL role rotation
-before changing database passwords. Migration and worker services use the matching built
-application image, avoiding schema/image drift. Rebuild application images before migrations
-when updating code. Runtime containers never receive migration credentials.
+Keep the existing local `.env` if already initialized. Compose synchronizes local database
+passwords, runs migrations, and waits for API readiness before starting the web app.
+The operator and migration containers normally exit with status 0. Migration and worker
+services use the matching built application image, avoiding schema/image drift. When
+updating code, repeat `docker compose build` and `docker compose up -d`, or combine them
+with `docker compose up -d --build`. Runtime containers never receive migration credentials.
+Production password rotation requires a separately coordinated operator procedure.
 
 Open http://localhost:8080. It is a loopback development origin; production requires HTTPS,
 secure cookies and encrypted service traffic. Nginx exposes only the static SPA and `/api/v1`,
 stripping identity claims and blocking internal/health/metrics routes. The databases and
-Knowledge original-file volume persist. Chat never mounts Knowledge files or a Docker socket.
+Knowledge originals persist in `data/postgres/` and `data/originals/` respectively.
+Chat never mounts Knowledge files or a Docker socket.
 
 ## Provision and use accounts
 
@@ -72,6 +77,11 @@ caller-scoped API/worker credentials, PUBLIC_ORIGIN and explicit AI settings. Ev
 mutation requires exact Origin and current CSRF; cookies are HttpOnly/SameSite and production
 __Host/Secure. No credentials, transcript or document cache is persisted in browser storage.
 Status polls and background checks do not refresh the 30-minute inactivity boundary.
+
+Optional LangSmith tracing is disabled by default and restricted to Chat/Knowledge.
+Follow the [tracing guide](../../infra/tracing.md) for configuration and verification.
+Compose aligns modern/legacy tracing flags and hides inputs/outputs; startup rejects
+enabled tracing without a LangSmith key or with unhidden payloads.
 
 Knowledge processing requires Linux: a fresh secret-free child enforces 512-MiB address space,
 90-second CPU/wall, 32-MiB file-backed output, 40-million decoded pixels and 256-MiB DOCX

@@ -60,28 +60,59 @@ initialize configuration. Host development additionally uses uv, Python 3.14 for
 Identity, Python 3.12 for Knowledge/Chat, Node.js 22.12+, and the pnpm version pinned
 in [frontend/package.json](frontend/package.json).
 
-Run these commands from this project directory:
+If you previously ran this project with named data volumes, choose either a
+[fresh start](infra/local-storage.md#start-empty-with-existing-named-volumes) or
+[migration](infra/local-storage.md#move-existing-named-volume-data) before starting
+services with the new mounts.
+
+For a new installation, run these commands from this project directory:
 
 ```sh
 python3 infra/init-env.py
-docker compose build identity knowledge chat web
-docker compose up -d postgres
-docker compose run --rm identity-migrate
-docker compose run --rm knowledge-migrate
-docker compose run --rm chat-migrate
-docker compose up -d identity knowledge knowledge-worker chat chat-worker web
+docker compose build
+mkdir -p data/postgres data/originals
+docker compose run --rm --no-deps --user root --entrypoint chown knowledge 10001:10001 /data/originals
+docker compose up -d
 docker compose ps
 ```
 
 The initializer creates a private, ignored `.env` with independent random development
 secrets. It refuses to overwrite an existing file; skip that command if your environment
-is already initialized. Database password changes require coordinating the corresponding
-PostgreSQL roles. Build application images before running migrations because migration
-and worker containers reuse those images.
+is already initialized. Subsequent starts need only `docker compose build` and
+`docker compose up -d` (or combine them with `docker compose up -d --build`).
+
+Compose waits for PostgreSQL, synchronizes the local database role passwords with
+the configuration, and runs all three migrations before starting their APIs and
+workers. The web app waits for API readiness. The `postgres-configure` and
+`*-migrate` containers finish with `Exited (0)`; this is expected. Runtime APIs and
+workers receive only their own runtime database credentials. Existing data directories
+are preserved. Production password rotation requires coordinating database clients
+and operator access separately.
 
 Open **[http://localhost:8080](http://localhost:8080)**. PostgreSQL is available to host
 development tools at `127.0.0.1:55432`. The web application and database bind to loopback;
 production deployment requires HTTPS, secure cookies, and encrypted service traffic.
+
+### Fix database password authentication failures
+
+If a migration reports `password authentication failed`, an existing PostgreSQL
+volume may still contain passwords from an earlier `.env`. PostgreSQL runs
+`bootstrap.sql` only when creating a new database volume; changing `.env` or
+rebuilding images does not update existing role passwords.
+
+The local `postgres-configure` startup job handles this automatically using a
+private Unix socket shared only with PostgreSQL. With the current Compose file,
+build and start the application:
+
+```sh
+docker compose build
+docker compose up -d
+```
+
+This preserves existing databases and documents. Keep the `data/` directory;
+`docker compose down -v` does not delete these bind-mounted files. To inspect startup
+failures, run
+`docker compose logs postgres-configure identity-migrate knowledge-migrate chat-migrate`.
 
 ### Create the first administrator
 
@@ -109,8 +140,13 @@ docker compose logs --tail=100 identity knowledge knowledge-worker chat chat-wor
 docker compose stop
 ```
 
-After changing application code, rebuild and repeat the migration/start sequence above.
-PostgreSQL data and originals persist in named volumes. Follow the
+After changing application code, run `docker compose build` and `docker compose up -d`.
+PostgreSQL data and originals persist in this project's `data/postgres/` and
+`data/originals/` directories through bind mounts. Both are excluded from Git and Docker
+build contexts. See the [local storage guide](infra/local-storage.md) to move existing
+named-volume data before starting with these mounts. The shared PostgreSQL socket is
+temporary communication state and remains in a Docker-managed volume; images, build
+cache, and container logs also remain managed by Docker. Follow the
 [backup and restore guide](infra/backup-restore.md) for a consistent snapshot of all
 three databases and original files.
 
@@ -134,6 +170,21 @@ Stub and OpenAI embeddings occupy distinct versioned vector spaces. Switching em
 mode, model, or pipeline requires a new version and explicit reindexing or fresh fixtures.
 Changing only the chat model does not require re-embedding. See the
 [quickstart](specs/001-company-knowledge-qa/quickstart.md) before enabling paid processing.
+
+LangSmith tracing is optional and disabled by default. Chat and Knowledge support
+opt-in traces with hidden inputs/outputs; Identity has no tracing dependency.
+See [LangSmith tracing setup and troubleshooting](infra/tracing.md) for the separate
+LangSmith key, project, endpoint, workspace, expected spans, and verification steps.
+
+If an upload ends with `processing_unavailable`, check
+`docker compose logs --tail=100 knowledge-worker`. An
+`embedding_unavailable error_type=AuthenticationError status=401` means OpenAI rejected
+the worker's key. Correct `OPENAI_API_KEY` in the private `.env`, then run
+`docker compose up -d --wait` to recreate services with the updated environment;
+`docker compose restart` does not reload `.env`. Upload again after correcting the key;
+failed jobs have exhausted their automatic retries. For PostgreSQL's
+`remaining connection slots are reserved` error, see the
+[connection budget](infra/postgres/README.md).
 
 ## Development and checks
 

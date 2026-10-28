@@ -31,7 +31,7 @@
 
 - [ ] CHK011 Are company and private-chat access rules consistent across the specification, data ownership definitions, and interface requirements? [Consistency, Spec §FR-001, Spec §FR-014, Spec §FR-019, Data Model §Ownership and common rules]
 - [ ] CHK012 Are admin content-management permissions consistent with the requirement that chat cannot perform administrative actions, even for admins? [Consistency, Spec §FR-002, Spec §FR-010, Spec §FR-021]
-- [ ] CHK013 Is the meaning of source freshness consistent between the specification’s “before display” wording and the plan’s final response-release checkpoint? [Consistency, Conflict, Spec §FR-011, Spec §SC-007, Plan §Ingestion, embeddings, and source freshness]
+- [ ] CHK013 Is the meaning of source freshness consistent between the specification's “before display” wording and the plan's final response-release checkpoint? [Consistency, Conflict, Spec §FR-011, Spec §SC-007, Plan §Ingestion, embeddings, and source freshness]
 - [ ] CHK014 Are model-selection requirements consistent for newly accepted requests and interrupted requests after a deployment configuration change? [Consistency, Plan §Chat model environment configuration, Data Model §Graph execution state and configuration]
 
 ## Acceptance Criteria Quality

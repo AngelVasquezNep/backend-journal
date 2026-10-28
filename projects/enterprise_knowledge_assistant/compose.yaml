@@ -6,10 +6,37 @@ x-common: &common
   LANGCHAIN_TRACING_V2: 'false'
   LANGSMITH_TRACING: 'false'
 
+x-tracing: &tracing
+  LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
+  # The SDK checks TRACING_V2 first; both flags must agree.
+  LANGCHAIN_TRACING_V2: ${LANGSMITH_TRACING:-false}
+  LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
+  LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-taskify-local}
+  LANGSMITH_ENDPOINT: ${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
+  LANGSMITH_WORKSPACE_ID: ${LANGSMITH_WORKSPACE_ID:-}
+  LANGSMITH_HIDE_INPUTS: 'true'
+  LANGSMITH_HIDE_OUTPUTS: 'true'
+
+x-database-passwords: &database-passwords
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a private POSTGRES_PASSWORD in .env}
+  IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?Set IDENTITY_DB_PASSWORD}
+  IDENTITY_MIGRATION_PASSWORD: ${IDENTITY_MIGRATION_PASSWORD:?Set IDENTITY_MIGRATION_PASSWORD}
+  KNOWLEDGE_DB_PASSWORD: ${KNOWLEDGE_DB_PASSWORD:?Set KNOWLEDGE_DB_PASSWORD}
+  KNOWLEDGE_MIGRATION_PASSWORD: ${KNOWLEDGE_MIGRATION_PASSWORD:?Set KNOWLEDGE_MIGRATION_PASSWORD}
+  CHAT_DB_PASSWORD: ${CHAT_DB_PASSWORD:?Set CHAT_DB_PASSWORD}
+  CHAT_MIGRATION_PASSWORD: ${CHAT_MIGRATION_PASSWORD:?Set CHAT_MIGRATION_PASSWORD}
+
+x-api-healthcheck: &api-healthcheck
+  test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5).close()"]
+  interval: 3s
+  timeout: 6s
+  retries: 30
+  start_period: 10s
+
 x-knowledge: &knowledge
   image: taskify-knowledge
   environment: &knowledge-env
-    <<: *common
+    <<: [*tracing, *common]
     DATABASE_URL: postgresql+psycopg://knowledge_runtime:${KNOWLEDGE_DB_PASSWORD}@postgres/knowledge
     IDENTITY_URL: http://identity:8000
     SERVICE_CREDENTIAL: ${KNOWLEDGE_API_CREDENTIAL}
@@ -22,15 +49,16 @@ x-knowledge: &knowledge
     OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
     EMBEDDING_DIMENSIONS: '1536'
     PIPELINE_VERSION: ${PIPELINE_VERSION:-pipeline-v1}
-  volumes: ['originals:/data/originals']
+  volumes: ['./data/originals:/data/originals']
   depends_on:
     postgres: { condition: service_healthy }
-    identity: { condition: service_started }
+    knowledge-migrate: { condition: service_completed_successfully }
+    identity: { condition: service_healthy }
 
 x-chat: &chat
   image: taskify-chat
   environment: &chat-env
-    <<: *common
+    <<: [*tracing, *common]
     DATABASE_URL: postgresql+psycopg://chat_runtime:${CHAT_DB_PASSWORD}@postgres/chat
     IDENTITY_URL: http://identity:8000
     KNOWLEDGE_URL: http://knowledge:8000
@@ -41,29 +69,38 @@ x-chat: &chat
     OPEN_AI_MODEL: ${OPEN_AI_MODEL:-}
   depends_on:
     postgres: { condition: service_healthy }
-    identity: { condition: service_started }
-    knowledge: { condition: service_started }
+    chat-migrate: { condition: service_completed_successfully }
+    identity: { condition: service_healthy }
+    knowledge: { condition: service_healthy }
 
 services:
   postgres:
-    image: pgvector/pgvector:pg16@sha256:7b822b0aac60967beb1ea5e576b8602c94c300a157d187f385ae3e0da199b90a
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a private POSTGRES_PASSWORD in .env}
-      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?Set IDENTITY_DB_PASSWORD}
-      IDENTITY_MIGRATION_PASSWORD: ${IDENTITY_MIGRATION_PASSWORD:?Set IDENTITY_MIGRATION_PASSWORD}
-      KNOWLEDGE_DB_PASSWORD: ${KNOWLEDGE_DB_PASSWORD:?Set KNOWLEDGE_DB_PASSWORD}
-      KNOWLEDGE_MIGRATION_PASSWORD: ${KNOWLEDGE_MIGRATION_PASSWORD:?Set KNOWLEDGE_MIGRATION_PASSWORD}
-      CHAT_DB_PASSWORD: ${CHAT_DB_PASSWORD:?Set CHAT_DB_PASSWORD}
-      CHAT_MIGRATION_PASSWORD: ${CHAT_MIGRATION_PASSWORD:?Set CHAT_MIGRATION_PASSWORD}
+    image: &postgres-image pgvector/pgvector:pg16@sha256:7b822b0aac60967beb1ea5e576b8602c94c300a157d187f385ae3e0da199b90a
+    command: ['postgres', '-c', 'max_connections=100']
+    environment: *database-passwords
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
+      - postgres-socket:/var/run/postgresql
       - ./infra/postgres/bootstrap.sql:/docker-entrypoint-initdb.d/001-bootstrap.sql:ro
     ports: ['127.0.0.1:55432:5432']
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      # The first-boot temporary server listens only on its Unix socket.
+      test: ['CMD', 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres']
       interval: 3s
       timeout: 3s
       retries: 30
+
+  postgres-configure:
+    image: *postgres-image
+    command: ['psql', '-X', '-w', '-h', '/var/run/postgresql', '-U', 'postgres', '-d', 'postgres', '-f', '/opt/taskify/sync-passwords.sql']
+    environment: *database-passwords
+    volumes:
+      # Only this local operator job shares the trusted database socket.
+      - postgres-socket:/var/run/postgresql
+      - ./infra/postgres/sync-passwords.sql:/opt/taskify/sync-passwords.sql:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: 'no'
 
   identity:
     image: taskify-identity
@@ -76,12 +113,15 @@ services:
       KNOWLEDGE_WORKER_CREDENTIAL: ${KNOWLEDGE_WORKER_CREDENTIAL:?Set KNOWLEDGE_WORKER_CREDENTIAL}
       CHAT_API_CREDENTIAL: ${CHAT_API_CREDENTIAL:?Set CHAT_API_CREDENTIAL}
       CHAT_WORKER_CREDENTIAL: ${CHAT_WORKER_CREDENTIAL:?Set CHAT_WORKER_CREDENTIAL}
+    healthcheck: *api-healthcheck
     depends_on:
       postgres: { condition: service_healthy }
+      identity-migrate: { condition: service_completed_successfully }
 
   knowledge:
     <<: *knowledge
     build: { context: ., dockerfile: services/knowledge/Dockerfile }
+    healthcheck: *api-healthcheck
 
   knowledge-worker:
     <<: *knowledge
@@ -93,6 +133,7 @@ services:
   chat:
     <<: *chat
     build: { context: ., dockerfile: services/chat/Dockerfile }
+    healthcheck: *api-healthcheck
 
   chat-worker:
     <<: *chat
@@ -104,34 +145,40 @@ services:
   web:
     build: { context: ., dockerfile: frontend/Dockerfile }
     ports: ['127.0.0.1:8080:8080']
-    depends_on: [identity, knowledge, chat]
+    depends_on:
+      identity: { condition: service_healthy }
+      knowledge: { condition: service_healthy }
+      chat: { condition: service_healthy }
 
   identity-migrate:
-    profiles: ['tools']
     image: taskify-identity
     command: ['alembic', 'upgrade', 'head']
     environment:
       DATABASE_URL: postgresql+psycopg://identity_migration:${IDENTITY_MIGRATION_PASSWORD}@postgres/identity
     depends_on:
       postgres: { condition: service_healthy }
+      postgres-configure: { condition: service_completed_successfully }
+    restart: 'no'
 
   knowledge-migrate:
-    profiles: ['tools']
     image: taskify-knowledge
     command: ['alembic', 'upgrade', 'head']
     environment:
       DATABASE_URL: postgresql+psycopg://knowledge_migration:${KNOWLEDGE_MIGRATION_PASSWORD}@postgres/knowledge
     depends_on:
       postgres: { condition: service_healthy }
+      postgres-configure: { condition: service_completed_successfully }
+    restart: 'no'
 
   chat-migrate:
-    profiles: ['tools']
     image: taskify-chat
     command: ['alembic', 'upgrade', 'head']
     environment:
       DATABASE_URL: postgresql+psycopg://chat_migration:${CHAT_MIGRATION_PASSWORD}@postgres/chat
     depends_on:
       postgres: { condition: service_healthy }
+      postgres-configure: { condition: service_completed_successfully }
+    restart: 'no'
 
   knowledge-test:
     profiles: ['test']
@@ -149,7 +196,7 @@ services:
       - ./tests/fixtures:/workspace/tests/fixtures:ro
     depends_on:
       postgres: { condition: service_healthy }
+      postgres-configure: { condition: service_completed_successfully }
 
 volumes:
-  postgres-data:
-  originals:
+  postgres-socket:

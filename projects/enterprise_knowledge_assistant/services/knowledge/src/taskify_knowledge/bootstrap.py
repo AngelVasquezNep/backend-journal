@@ -144,7 +144,7 @@ def create_app(
 
 
 def main() -> None:
-    """Serve the independent Knowledge API without request-body/provider tracing or access payloads."""
+    """Serve Knowledge with optional redacted LangSmith tracing and no request/access payload logs."""
     configure_logging()
     uvicorn.run(
         "taskify_knowledge.bootstrap:create_app",

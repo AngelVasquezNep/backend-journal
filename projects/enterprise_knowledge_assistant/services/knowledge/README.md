@@ -72,7 +72,8 @@ Deterministic fixture vectors provide no live quality evidence.
 Runtime roles are nonowners with forced tenant RLS and reset transaction-local context.
 Migration credentials are operator-only. Core imports only standard-library code and
 owned ports. Logs exclude originals, queries, prompts, session/CSRF secrets and keys;
-third-party tracing stays off. Configuration and contracts are documented under
+third-party tracing stays off by default. Optional embedding spans hide inputs/outputs;
+see the [tracing guide](../../infra/tracing.md). Configuration and contracts are documented under
 `specs/001-company-knowledge-qa/`. There is no positive authentication cache; automatic
 status polling and background work never refresh session inactivity.
 
@@ -107,7 +108,8 @@ Counters contain only request/status-class/time and readiness totals; they are p
 local and reset on restart. Workers emit fixed outcome/error-code/attempt/count fields,
 never documents, queries, prompts, chat text, identities or secrets. Normal readiness
 makes no paid provider call; Knowledge/Chat additionally check configured first-party
-dependency readiness over bounded nonredirecting HTTP. Third-party tracing remains off.
+dependency readiness over bounded nonredirecting HTTP. Optional LangSmith exports are
+outside readiness checks and do not require a paid provider probe.
 See `infra/backup-restore.md` for consistent owned-database/private-original recovery.
 
 Long upload/replacement staging is followed by another online session/role/CSRF check

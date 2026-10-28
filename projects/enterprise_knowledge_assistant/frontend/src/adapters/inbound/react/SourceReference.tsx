@@ -1,5 +1,6 @@
 /** Source references display owned provenance and route only to freshly authorized same-origin originals. */
 import type { Citation } from '@/domain/chat';
+import { Icon } from '@/adapters/inbound/react/UI';
 
 /** Render a human-readable original location without interpreting any source text as markup. */
 function location(citation: Citation): string {
@@ -13,5 +14,5 @@ function location(citation: Citation): string {
 /** Keep unavailable historic labels visible without relinking their locator to a replacement revision. */
 export function SourceReference({ citation, onOpen }: { citation: Citation; onOpen: (citation: Citation) => Promise<void> }) {
   const label = `${citation.label} (${location(citation)})`;
-  return <li>{citation.availability === 'current' && citation.resourceURL ? <a href={citation.resourceURL} onClick={(event) => { event.preventDefault(); void onOpen(citation); }}>{label}</a> : <span>{label} — source no longer available</span>}</li>;
+  return <li className="source-reference">{citation.availability === 'current' && citation.resourceURL ? <a href={citation.resourceURL} onClick={(event) => { event.preventDefault(); void onOpen(citation); }}><Icon name="file" /><span>{label}</span><Icon name="download" /></a> : <span><Icon name="file" />{label} — source no longer available</span>}</li>;
 }
