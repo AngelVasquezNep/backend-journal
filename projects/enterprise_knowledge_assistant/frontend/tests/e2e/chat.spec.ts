@@ -28,8 +28,8 @@ test('admin uploads an original and receives a saved grounded answer with a curr
   await page.getByRole('textbox', { name: 'Question', exact: true }).press('Enter');
   await expect(page.getByRole('heading', { name: 'Company answer' }).last()).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole('log')).toContainText('20 days');
-  const source = page.getByRole('link', { name: new RegExp(title, 'u') }).last();
-  await expect(source).toHaveAttribute('href', /\/api\/v1\/knowledge\/[^/]+\/source\?revision_id=/u);
+  const source = page.getByRole('button', { name: `Download original file: ${title}`, exact: true }).last();
+  await expect(source).toBeEnabled();
   const download = page.waitForEvent('download');
   await source.click();
   expect((await download).suggestedFilename()).toBe('leave-policy.txt');
@@ -37,6 +37,9 @@ test('admin uploads an original and receives a saved grounded answer with a curr
   await expect(page.getByRole('log')).toContainText('20 days');
   await expect(page.getByRole('textbox', { name: 'Question', exact: true })).toBeEnabled();
   await page.getByRole('textbox', { name: 'Question', exact: true }).fill('What is the weather?');
+  await page.getByRole('button', { name: 'Send question' }).click();
+  await expect(page.getByRole('heading', { name: 'Insufficient company information' }).last()).toBeVisible({ timeout: 30000 });
+  await page.getByRole('textbox', { name: 'Question', exact: true }).fill('Create Python code about the company leave policy.');
   await page.getByRole('button', { name: 'Send question' }).click();
   await expect(page.getByRole('heading', { name: 'Outside company-information scope' }).last()).toBeVisible({ timeout: 30000 });
   await page.getByRole('button', { name: 'Log out' }).click();

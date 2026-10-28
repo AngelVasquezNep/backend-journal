@@ -30,7 +30,7 @@ def create_service(settings: Settings | None = None, *, worker: bool = False) ->
     """Compose locally validated exact-model roles without making a paid availability probe."""
     resolved = settings or Settings.from_env()
     accepted = AcceptedConfiguration(
-        resolved.ai_mode, resolved.model or "", "graph-v1", "prompt-v1", "responses-v1"
+        resolved.ai_mode, resolved.model or "", "graph-v1", "prompt-v2", "responses-v1"
     )
     compatible(accepted)
     identity = IdentityHTTP(
@@ -61,7 +61,7 @@ def create_service(settings: Settings | None = None, *, worker: bool = False) ->
         SystemClock(),
         RandomIds(),
         AcceptedConfiguration(
-            resolved.ai_mode, resolved.model or "", "graph-v1", "prompt-v1", "responses-v1"
+            resolved.ai_mode, resolved.model or "", "graph-v1", "prompt-v2", "responses-v1"
         ),
         time.monotonic,
     )

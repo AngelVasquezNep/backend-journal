@@ -52,7 +52,7 @@ The [LangGraph graph](https://docs.langchain.com/oss/python/langgraph/graph-api)
 explicit scope → retrieve → generate → verify branches and no back edges. It compiles
 without checkpoints, stores or result caches. Immutable actor context is separate from
 model-writable state. Each whole attempt is bounded to 12 graph steps and a shared
-20-second deadline; all roles share one transient provider retry. Prior history is only
+60-second deadline; all roles share one transient provider retry. Prior history is only
 for topic resolution, never facts. The newest complete prior messages fit within 6000
 cl100k tokens; older messages stay saved but missing/ambiguous referents require a
 clarification. The current question is separate and limited to 4000 code points.

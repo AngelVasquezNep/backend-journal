@@ -135,12 +135,12 @@ class LangGraphWorkflow:
         if decision.intent in ("unrelated", "action_request"):
             draft = AnswerDraft(
                 "refusal",
-                message="I can only answer questions using your company's information. I cannot perform actions or answer unrelated requests.",
+                message="I can answer, explain or summarize information in your company documents. I cannot create code, prompts or other drafts, or perform actions.",
             )
         elif decision.intent == "ambiguous" or not decision.query:
             draft = AnswerDraft(
                 "clarification",
-                message="Which company topic or policy do you mean? Please include the relevant details.",
+                message="What would you like to know? Please specify the subject or document you mean.",
             )
         elif not 1 <= len(decision.query.strip()) <= 4000:
             raise ApplicationError(
@@ -149,7 +149,10 @@ class LangGraphWorkflow:
         else:
             draft = AnswerDraft(
                 "insufficient_information",
-                message="No ready company evidence answers this question.",
+                message="I couldn’t find enough information in the available company documents to answer that.",
+                refusal_text="I cannot create code, prompts or other drafts, or perform actions."
+                if decision.intent == "mixed"
+                else None,
             )
         return {"scope": decision, "draft": draft}
 
@@ -188,16 +191,19 @@ class LangGraphWorkflow:
             draft = replace(
                 draft,
                 message=None,
-                refusal_text="I cannot perform actions or answer unrelated requests."
+                refusal_text="I cannot create code, prompts or other drafts, or perform actions."
                 if state["scope"].intent == "mixed"
                 else None,
             )
         elif draft.outcome in ("insufficient_information", "clarification") and not draft.claims:
             draft = AnswerDraft(
                 draft.outcome,
-                message="The ready company information does not answer this question."
+                message="I couldn’t find enough information in the available company documents to answer that."
                 if draft.outcome == "insufficient_information"
-                else "Please clarify the company topic or policy you mean.",
+                else "Please specify the subject or document you mean.",
+                refusal_text="I cannot create code, prompts or other drafts, or perform actions."
+                if state["scope"].intent == "mixed"
+                else None,
             )
         else:
             raise ApplicationError(
@@ -226,7 +232,7 @@ class LangGraphWorkflow:
         configuration: AcceptedConfiguration,
         deadline: float,
     ) -> Candidate:
-        """Run at most 12 graph steps within the remaining shared 20-second whole-attempt deadline."""
+        """Run at most 12 graph steps within the remaining shared 60-second whole-attempt deadline."""
         compatible(configuration)
         selected, omitted = bounded_history(history)
         audit = Audit()

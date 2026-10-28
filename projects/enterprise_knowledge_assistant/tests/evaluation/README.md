@@ -63,3 +63,22 @@ no action. Every factual answer needs authorized inspectable references. The har
 checks original identity; independent review supplies semantic entailment/completeness.
 Record the exact mode/model/pipeline, manifest digest, actual sample counts, every
 failure and reviewer identity in validation.md. There is no automatic quality approval.
+
+## Document-topic role diagnostics
+
+A smaller synthetic-evidence diagnostic set covers social-media research without company
+wording, summaries, general-topic follow-ups, irrelevant/empty evidence, unsupported
+conclusions, prohibited creation despite matching documents, and prompt injection.
+It uses the real scope/generation/verification roles but a local Knowledge double;
+it does not establish end-to-end retrieval quality or independent acceptance.
+
+From the repository root, with an explicit model and backend key exported:
+
+```sh
+TASKIFY_RUN_LIVE_OPENAI=1 services/chat/.venv/bin/pytest services/chat/tests/unit/test_document_scope.py -q
+```
+
+Without the opt-in flag, paid cases skip and deterministic routing cases run locally.
+The semantic-conclusion case skips in stub mode. No paid diagnostic run was performed
+as part of this change. History padding in the full acceptance harness now requests
+prohibited code creation, since general factual questions should search documents.

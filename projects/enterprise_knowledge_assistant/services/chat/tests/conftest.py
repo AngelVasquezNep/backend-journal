@@ -228,7 +228,7 @@ def chat_service(
         LangGraphWorkflow(knowledge_double, lambda configuration: StubAnswerer()),
         clock,
         RandomIds(),
-        AcceptedConfiguration("stub", "stub-fixture-v1", "graph-v1", "prompt-v1", "responses-v1"),
+        AcceptedConfiguration("stub", "stub-fixture-v1", "graph-v1", "prompt-v2", "responses-v1"),
         time.monotonic,
     )
     engine.dispose()

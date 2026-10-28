@@ -61,7 +61,7 @@ def complete_history(client: PublicClient) -> list[dict]:
 def pad_history(client: PublicClient, boundary: str) -> dict:
     """Construct and verify actual saved within/at/beyond context boundaries using only public turns.
 
-    Unrelated padding gets a saved application refusal. Its observed complete-message
+    Prohibited code-creation padding gets a saved application refusal. Its observed complete-message
     token count is included. Exact-boundary construction fails visibly if model scope
     changes that expected refusal instead of silently counting the case as covered.
     """
@@ -74,13 +74,13 @@ def pad_history(client: PublicClient, boundary: str) -> dict:
             "topic_retained": True,
         }
     first_pair = sum(tokens(entry["content"]) for entry in messages)
-    observed, _ = client.question("What is the capital of France?")
+    observed, _ = client.question("Create Python code to print the capital of France.")
     assert observed["assistant_message"]["outcome"] == "refusal", (
-        "Padding must be unrelated and explicitly refused."
+        "Padding must request code creation and be explicitly refused."
     )
     refusal_tokens = tokens(observed["assistant_message"]["content"])
     target = 6000 if boundary == "at" else 6000 + first_pair + 1
-    prefix = "What is the capital of France? "
+    prefix = "Create Python code to print the capital of France. "
     while True:
         messages = complete_history(client)
         current = sum(tokens(entry["content"]) for entry in messages)

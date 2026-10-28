@@ -169,12 +169,15 @@ form { display: grid; gap: 10px; }
 .message-sources > span .icon { width: 13px; }
 .message-sources ul { display: flex; flex-wrap: wrap; list-style: none; padding: 0; margin: 9px 0 0; gap: 7px; }
 .source-reference { min-width: 0; max-width: 100%; }
-.source-reference > a, .source-reference > span { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font-size: 12px; text-decoration: none; color: #6d638b; }
-.source-reference > a:hover { border-color: #b5a8df; background: #fbfaff; }
-.source-reference .icon { width: 14px; height: 14px; }
-.source-reference > a > span { overflow-wrap: anywhere; }
-.source-reference > a .icon:last-child { width: 12px; margin-left: 4px; }
-.source-reference > span { color: var(--muted); }
+.source-reference-content { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; background: white; border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px 6px 10px; font-size: 12px; color: #6d638b; }
+.source-reference .icon { width: 14px; height: 14px; flex-shrink: 0; }
+.source-reference-title, .source-reference-locations { min-width: 0; overflow-wrap: anywhere; }
+.source-reference-title { font-weight: 600; }
+.source-reference-divider, .source-reference-locations, .source-reference-unavailable { color: var(--muted); }
+.source-download { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; margin-left: auto; padding: 0; border: 0; border-radius: 4px; background: transparent; color: #6d638b; cursor: pointer; }
+.source-download:hover:not(:disabled) { background: #eeedf7; }
+.source-download:focus-visible { outline: 2px solid #6d638b; outline-offset: 2px; }
+.source-download:disabled { opacity: .4; cursor: default; }
 .answer-pending { display: flex; align-items: center; gap: 14px; margin: 12px 0 24px; color: var(--muted); font-size: 13px; }
 .answer-pending .brand-mark { width: 32px; height: 33px; border-radius: 9px 9px 9px 3px; }
 .answer-pending > span:not(.thinking-dots) { display: grid; gap: 3px; }
@@ -469,7 +472,7 @@ form { display: grid; gap: 10px; }
   .message-content { font-size: 14px; line-height: 1.8; }
   .chat-message--user .message-content { padding: 12px 14px; }
   .message-sources > span { font-size: 10px; }
-  .source-reference > a, .source-reference > span { font-size: 11px; }
+  .source-reference-content { font-size: 11px; }
   .answer-pending { gap: 9px; font-size: 11px; }
   .answer-pending > span > span { font-size: 10px; }
   .library-intro { padding: 19px 17px; gap: 13px; align-items: flex-start; }

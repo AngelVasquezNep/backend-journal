@@ -50,5 +50,5 @@ class TurnWorkflow(Protocol):
         configuration: AcceptedConfiguration,
         deadline: float,
     ) -> Candidate:
-        """Return a candidate within 12 steps/20 seconds, or an explicit safe operational failure."""
+        """Return a candidate within 12 steps/60 seconds, or an explicit safe operational failure."""
         ...

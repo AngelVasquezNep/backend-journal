@@ -76,11 +76,12 @@ def test_all_structured_roles_use_exact_accepted_model_and_no_tools(monkeypatch)
     monkeypatch.setattr("taskify_chat.adapters.outbound.langchain_openai.ChatOpenAI", Model)
     OpenAIAnswerer(
         AcceptedConfiguration(
-            "openai", "accepted-model-snapshot", "graph-v1", "prompt-v1", "responses-v1"
+            "openai", "accepted-model-snapshot", "graph-v1", "prompt-v2", "responses-v1"
         ),
         "fixture-not-a-provider-key",
     )
     assert captured["model"] == "accepted-model-snapshot"
+    assert captured["timeout"] == 60.0
     assert (
         captured["use_responses_api"] is True
         and captured["store"] is False
@@ -101,5 +102,17 @@ def test_incompatible_models_fail_before_langchain_can_fall_back_to_tools() -> N
     for model in ("gpt-3.5-turbo", "gpt-4", "gpt-4-0613"):
         with pytest.raises(ApplicationError):
             compatible(
-                AcceptedConfiguration("openai", model, "graph-v1", "prompt-v1", "responses-v1")
+                AcceptedConfiguration("openai", model, "graph-v1", "prompt-v2", "responses-v1")
             )
+
+
+def test_previous_prompt_version_is_not_silently_reinterpreted() -> None:
+    """Queued old-policy turns fail explicitly rather than execute different accepted prompts."""
+    from taskify_chat.adapters.outbound.model_profiles import compatible
+    from taskify_chat.application.ports.workflow import AcceptedConfiguration
+    from taskify_chat.domain.errors import ApplicationError
+
+    with pytest.raises(ApplicationError):
+        compatible(
+            AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v1", "responses-v1")
+        )

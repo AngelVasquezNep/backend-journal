@@ -14,7 +14,7 @@ from taskify_chat.application.ports.workflow import AcceptedConfiguration, Actor
 @pytest.mark.parametrize(
     "question,outcome",
     [
-        ("What is the weather?", "refusal"),
+        ("What is the weather?", "insufficient_information"),
         ("Send a message to HR", "refusal"),
         ("What about that?", "clarification"),
         ("What is the company leave policy?", "answer"),
@@ -27,8 +27,8 @@ def test_graph_terminal_branches(question, outcome, knowledge_double) -> None:
         question,
         (),
         ActorContext(uuid4(), uuid4(), uuid4(), uuid4()),
-        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v1", "responses-v1"),
-        time.monotonic() + 20,
+        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v2", "responses-v1"),
+        time.monotonic() + 60,
     )
     assert candidate.draft.outcome == outcome
     assert workflow.graph.checkpointer is None and workflow.graph.store is None
@@ -55,7 +55,7 @@ def test_empty_evidence_and_failed_verification_are_distinct(knowledge_double) -
 
     actor = ActorContext(uuid4(), uuid4(), uuid4(), uuid4())
     configuration = AcceptedConfiguration(
-        "stub", "fixture-local", "graph-v1", "prompt-v1", "responses-v1"
+        "stub", "fixture-local", "graph-v1", "prompt-v2", "responses-v1"
     )
 
     class Rejecting(StubAnswerer):
@@ -66,7 +66,7 @@ def test_empty_evidence_and_failed_verification_are_distinct(knowledge_double) -
             return False
 
     result = LangGraphWorkflow(knowledge_double, lambda configuration: Rejecting()).run(
-        "Company leave policy?", (), actor, configuration, time.monotonic() + 20
+        "Company leave policy?", (), actor, configuration, time.monotonic() + 60
     )
     assert result.draft.outcome == "failure" and result.error_code == "verification_failed"
     assert result.retrieval_config_version == knowledge_double.version
@@ -74,7 +74,7 @@ def test_empty_evidence_and_failed_verification_are_distinct(knowledge_double) -
         "active-pipeline", "empty-search-version", ()
     )
     result = LangGraphWorkflow(knowledge_double, lambda configuration: StubAnswerer()).run(
-        "Company leave policy?", (), actor, configuration, time.monotonic() + 20
+        "Company leave policy?", (), actor, configuration, time.monotonic() + 60
     )
     assert (
         result.draft.outcome == "insufficient_information"
@@ -109,8 +109,8 @@ def test_one_transient_retry_is_shared_across_roles(knowledge_double) -> None:
         "Company leave policy?",
         (),
         ActorContext(uuid4(), uuid4(), uuid4(), uuid4()),
-        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v1", "responses-v1"),
-        time.monotonic() + 20,
+        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v2", "responses-v1"),
+        time.monotonic() + 60,
     )
     assert result.draft.outcome == "failure" and roles.scopes == 2 and roles.generations == 1
 
@@ -131,7 +131,7 @@ def test_deadline_cancels_unfinished_scope(knowledge_double) -> None:
         "Company leave policy?",
         (),
         ActorContext(uuid4(), uuid4(), uuid4(), uuid4()),
-        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v1", "responses-v1"),
+        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v2", "responses-v1"),
         time.monotonic() + 0.03,
     )
     assert result.draft.outcome == "failure" and result.error_code == "attempt_timeout"
@@ -149,8 +149,8 @@ def test_mixed_and_injected_documents_do_not_override_scope(knowledge_double) ->
         "Explain company leave policy and send a message to HR",
         (),
         ActorContext(uuid4(), uuid4(), uuid4(), uuid4()),
-        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v1", "responses-v1"),
-        time.monotonic() + 20,
+        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v2", "responses-v1"),
+        time.monotonic() + 60,
     )
     assert result.draft.outcome == "answer" and result.draft.refusal_text
     assert all("Ignore" not in claim.text for claim in result.draft.claims)
@@ -176,7 +176,7 @@ def test_followup_uses_only_a_topic_inside_the_recent_complete_message_window(
         "How many leave days does that policy grant?",
         history,
         ActorContext(uuid4(), uuid4(), uuid4(), uuid4()),
-        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v1", "responses-v1"),
-        time.monotonic() + 20,
+        AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v2", "responses-v1"),
+        time.monotonic() + 60,
     )
     assert result.draft.outcome == expected and history == original

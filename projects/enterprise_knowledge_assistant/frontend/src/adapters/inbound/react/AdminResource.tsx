@@ -31,7 +31,7 @@ export function AdminResource({ item, knowledge, wrapFile, update, removed }: { 
     const form = event.currentTarget;
     try {
       const accepted = await knowledge.replace(item, wrapFile(file)); update(accepted); setFile(null); form.reset();
-      setNotice('Replacement uploaded. The current original stays available while it's prepared.');
+      setNotice('Replacement uploaded. The current original stays available while it is prepared.');
       void knowledge.watch(accepted, update).catch(() => { setError('Status could not be refreshed. Reload to retry.'); });
     } catch (failure) { failed(failure); } finally { setBusy(false); }
   }

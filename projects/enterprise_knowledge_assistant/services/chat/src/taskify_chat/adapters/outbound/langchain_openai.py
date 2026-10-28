@@ -7,7 +7,14 @@ from typing import Literal
 from uuid import UUID
 
 from langchain_openai import ChatOpenAI
-from openai import APIConnectionError, APITimeoutError, InternalServerError, RateLimitError
+from openai import (
+    APIConnectionError,
+    APITimeoutError,
+    DefaultAsyncHttpxClient,
+    DefaultHttpxClient,
+    InternalServerError,
+    RateLimitError,
+)
 from pydantic import BaseModel, ConfigDict, SecretStr
 
 from taskify_chat.adapters.outbound.model_profiles import compatible
@@ -28,7 +35,7 @@ class TransientProviderError(DependencyUnavailable):
 
 
 class ScopeSchema(BaseModel):
-    """Strict output distinguishes supported company scope from ambiguous/unrelated/action/mixed intent."""
+    """Strict operation classification; company_information is a candidate for document search."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
     intent: Literal["company_information", "unrelated", "action_request", "mixed", "ambiguous"]
@@ -75,7 +82,10 @@ class OpenAIAnswerer:
             base_url="https://api.openai.com/v1",
             use_responses_api=True,
             max_retries=0,
-            timeout=8.0,
+            timeout=60.0,
+            # LangChain caches default pools; each attempt closes only its own clients.
+            http_client=DefaultHttpxClient(timeout=60.0),
+            http_async_client=DefaultAsyncHttpxClient(timeout=60.0),
             cache=False,
             store=False,
         )
@@ -190,54 +200,36 @@ class StubAnswerer:
     """Conservative deterministic fixture role; provides no live quality/refusal evaluation evidence."""
 
     async def scope(self, question: str, history: tuple[HistoryMessage, ...]) -> ScopeDecision:
-        """Recognize fixture company topics/actions without treating document instructions as authority."""
+        """Route fixture information topics to search; never infer document coverage from keywords."""
         lowered = question.casefold()
-        company = any(
-            word in lowered
-            for word in ("company", "policy", "leave", "benefit", "travel", "expense", "vacation")
+        prohibited = re.compile(
+            r"\b(?:send|delete|create|write|draft|generate|execute|email)\b"
+            r"|ignore (?:all|instructions)|reveal (?:the )?(?:system|protected)"
         )
-        action = any(
-            word in lowered
-            for word in (
-                "send ",
-                "delete ",
-                "create ",
-                "email ",
-                "execute ",
-                "ignore instructions",
-                "ignore all",
-            )
+        # This intentionally small fixture parser is not a production safety classifier.
+        parts = re.split(r"\s+and\s+", question, flags=re.IGNORECASE)
+        information = [part for part in parts if not prohibited.search(part.casefold())]
+        action = bool(prohibited.search(lowered))
+        if action and not information:
+            return ScopeDecision("action_request")
+        query = " and ".join(information) if action else question
+        reference = bool(
+            re.search(r"\b(?:that|those|it)\b|what about|exceptions", query.casefold())
         )
-        reference = bool(re.search(r"\b(?:that|those|it)\b|what about|exceptions", lowered))
-        if reference and not re.search(r"policy\s+\d+", lowered):
+        if reference and not re.search(r"policy\s+\d+", query.casefold()):
             topic = next(
-                (
-                    message.content
-                    for message in reversed(history)
-                    if message.sender == "user"
-                    and any(
-                        word in message.content.casefold()
-                        for word in ("company", "policy", "leave", "travel")
-                    )
-                ),
+                (message.content for message in reversed(history) if message.sender == "user"),
                 None,
             )
             if topic is None:
                 return ScopeDecision("ambiguous")
-            return ScopeDecision(
-                "company_information",
-                topic + " " + question if len(topic + " " + question) <= 4000 else None,
-            )
-        if action and company:
-            return ScopeDecision(
-                "mixed", question, "I cannot perform actions or answer unrelated requests."
-            )
-        if action:
-            return ScopeDecision("action_request")
-        return (
-            ScopeDecision("company_information", question)
-            if company
-            else ScopeDecision("unrelated")
+            query = topic + " " + query
+        return ScopeDecision(
+            "mixed" if action else "company_information",
+            query if len(query) <= 4000 else None,
+            "I cannot create code, prompts or other drafts, or perform actions."
+            if action
+            else None,
         )
 
     async def generate(self, query: str, evidence: tuple[Evidence, ...]) -> AnswerDraft:
@@ -260,9 +252,9 @@ class StubAnswerer:
                 if terms & set(re.findall(r"\w+", lower)) and not any(
                     word in lower
                     for word in (
-                        "ignore",
-                        "instruction",
-                        "system prompt",
+                        "ignore all",
+                        "ignore instructions",
+                        "reveal the system prompt",
                         "send ",
                         "delete ",
                         "http:",

@@ -61,7 +61,7 @@ def process(service: ChatService, turn: ChatTurn) -> bool:
     """Restart from fresh history/evidence on every claim and save at most one authorized terminal result."""
     actor = stored_actor(service, turn)
     correlation = service.ids.new()
-    deadline = service.monotonic() + 20
+    deadline = service.monotonic() + 60
     with service.store.transaction(actor) as transaction:
         if not transaction.live_turn(turn, service.clock.now()):
             return False

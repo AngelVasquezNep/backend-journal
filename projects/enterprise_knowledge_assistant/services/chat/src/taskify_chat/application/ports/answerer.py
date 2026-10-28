@@ -17,7 +17,7 @@ class HistoryMessage:
 
 @dataclass(frozen=True)
 class ScopeDecision:
-    """Classified company-information scope and optional bounded standalone question."""
+    """Classified operation; company_information means a candidate for authorized document search."""
 
     intent: Literal["company_information", "unrelated", "action_request", "mixed", "ambiguous"]
     query: str | None = None

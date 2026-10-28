@@ -119,8 +119,8 @@ def test_graph_and_model_roles_share_one_redacted_trace(
             "private-company-question",
             (),
             ActorContext(uuid4(), uuid4(), uuid4(), uuid4()),
-            AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v1", "responses-v1"),
-            time.monotonic() + 20,
+            AcceptedConfiguration("stub", "fixture-local", "graph-v1", "prompt-v2", "responses-v1"),
+            time.monotonic() + 60,
         )
     wait_for_all_tracers()
     client.flush()

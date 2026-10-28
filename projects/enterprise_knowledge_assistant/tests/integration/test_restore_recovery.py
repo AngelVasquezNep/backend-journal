@@ -263,7 +263,7 @@ def test_consistent_owned_restore_and_pending_claim_recovery(tmp_path) -> None:
             )
             connection.execute(
                 """INSERT INTO chat_turns(id,company_id,account_id,conversation_id,client_message_id,user_message_id,accepted_login_session_id,state,attempt_count,lease_version,created_at,ai_mode,model,graph_version,prompt_version,model_config_version)
-                VALUES(%s,%s,%s,%s,%s,%s,%s,'queued',0,0,%s,'stub','stub-fixture-v1','graph-v1','prompt-v1','responses-v1')""",
+                VALUES(%s,%s,%s,%s,%s,%s,%s,'queued',0,0,%s,'stub','stub-fixture-v1','graph-v1','prompt-v2','responses-v1')""",
                 (turn, company, account, conversation, uuid4(), message, session, now),
             )
             connection.execute(

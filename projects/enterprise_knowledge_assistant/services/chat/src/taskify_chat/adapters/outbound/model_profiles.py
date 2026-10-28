@@ -11,7 +11,7 @@ def compatible(configuration: AcceptedConfiguration) -> None:
     """Retain supported accepted versions on recovery; never silently replace a queued model/profile."""
     if (
         configuration.graph_version != GRAPH_VERSION
-        or configuration.prompt_version != "prompt-v1"
+        or configuration.prompt_version != "prompt-v2"
         or configuration.model_config_version != MODEL_CONFIG_VERSION
         or configuration.ai_mode not in ("stub", "openai")
         or not configuration.model
